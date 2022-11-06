@@ -13,7 +13,7 @@ describe("EOAccount", function (){
     accounts = await ethers.getSigners();
 
     EAAccountsContract = await ethers.getContractFactory("EOAccount", accounts[0])
-    myEAAccountsContract = await EAAccountsContract.deploy([accounts[1].address, accounts[2].address, accounts[3].address])
+    myEAAccountsContract = await EAAccountsContract.deploy("Tether USD", "USDT", [accounts[1].address, accounts[2].address, accounts[3].address])
 
     await myEAAccountsContract.deployed()
 
