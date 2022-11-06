@@ -8,7 +8,7 @@ let myEAAccountsContract
 let adminRole
 let trustedRole
 
-describe("EOAccount", function (){
+describe("EOAccount: main logic", function (){
   beforeEach(async function(){
     accounts = await ethers.getSigners();
 
@@ -19,9 +19,7 @@ describe("EOAccount", function (){
 
     adminRole = await myEAAccountsContract.DEFAULT_ADMIN_ROLE()
     trustedRole = await myEAAccountsContract.TRUSTED_ACCOUNT_ROLE()
-  })
 
-  it("Owner of contract", async function(){
     expect(await myEAAccountsContract.owner()).to.equal(accounts[0].address)
   })
 
@@ -32,9 +30,45 @@ describe("EOAccount", function (){
     expect(await myEAAccountsContract.totalAmount()).to.equal(amount)
   })
 
-  it("Correct transfer Ownership", async function(){
-    await myEAAccountsContract.transferOwnership(accounts[5].address)
-    expect(await myEAAccountsContract.owner()).to.equal(accounts[5].address)
+  describe("Recover voting", function(){
+    it("Correct full recovery voting", async function(){
+      await myEAAccountsContract.connect(accounts[1]).startRecoveryAccount(accounts[10].address)
+  
+      await myEAAccountsContract.connect(accounts[1]).voteRecoveryAccount(accounts[0].address, accounts[10].address)
+      await myEAAccountsContract.connect(accounts[2]).voteRecoveryAccount(accounts[0].address, accounts[10].address)
+      await myEAAccountsContract.connect(accounts[3]).voteRecoveryAccount(accounts[0].address, accounts[10].address)
+  
+      expect(await myEAAccountsContract.hasRole(adminRole, accounts[0].address)).to.equal(false)
+      expect(await myEAAccountsContract.hasRole(adminRole, accounts[10].address)).to.equal(true)
+    })
+  
+    it("Correct not full recovery voting", async function(){
+      await myEAAccountsContract.connect(accounts[1]).startRecoveryAccount(accounts[10].address)
+  
+      await myEAAccountsContract.connect(accounts[1]).voteRecoveryAccount(accounts[0].address, accounts[10].address)
+      await myEAAccountsContract.connect(accounts[2]).voteRecoveryAccount(accounts[0].address, accounts[10].address)
+  
+      expect(await myEAAccountsContract.hasRole(adminRole, accounts[0].address)).to.equal(true)
+      expect(await myEAAccountsContract.hasRole(adminRole, accounts[10].address)).to.equal(false)
+    })
+  })
+});
+
+
+
+describe("EOAccount: standart AccessControl", function(){
+  beforeEach(async function(){
+    accounts = await ethers.getSigners();
+
+    EAAccountsContract = await ethers.getContractFactory("EOAccount", accounts[0])
+    myEAAccountsContract = await EAAccountsContract.deploy([accounts[1].address, accounts[2].address, accounts[3].address])
+
+    await myEAAccountsContract.deployed()
+
+    adminRole = await myEAAccountsContract.DEFAULT_ADMIN_ROLE()
+    trustedRole = await myEAAccountsContract.TRUSTED_ACCOUNT_ROLE()
+
+    expect(await myEAAccountsContract.owner()).to.equal(accounts[0].address)
   })
 
   describe("Accounts have correct roles", function(){
@@ -51,6 +85,11 @@ describe("EOAccount", function (){
       expect(await myEAAccountsContract.hasRole(adminRole, accounts[2].address)).to.equal(false)
       expect(await myEAAccountsContract.hasRole(adminRole, accounts[3].address)).to.equal(false)
     })  
+  })
+
+  it("Correct transfer Ownership", async function(){
+    await myEAAccountsContract.transferOwnership(accounts[5].address)
+    expect(await myEAAccountsContract.owner()).to.equal(accounts[5].address)
   })
 
   describe("Grant role", function(){
@@ -83,7 +122,6 @@ describe("EOAccount", function (){
     })
   })
 
-
   describe("Renounce role", function(){
     it("Correct renounce role by right person", async function(){
       await myEAAccountsContract.connect(accounts[1]).renounceRole(trustedRole, accounts[1].address)
@@ -98,28 +136,4 @@ describe("EOAccount", function (){
       await expect(myEAAccountsContract.connect(accounts[6]).renounceRole(trustedRole, accounts[2].address)).to.be.reverted
     })
   })
-
-
-  describe("Recover voting", function(){
-    it("Correct full recovery voting", async function(){
-      await myEAAccountsContract.connect(accounts[1]).startRecoveryAccount(accounts[10].address)
-  
-      await myEAAccountsContract.connect(accounts[1]).voteRecoveryAccount(accounts[0].address, accounts[10].address)
-      await myEAAccountsContract.connect(accounts[2]).voteRecoveryAccount(accounts[0].address, accounts[10].address)
-      await myEAAccountsContract.connect(accounts[3]).voteRecoveryAccount(accounts[0].address, accounts[10].address)
-  
-      expect(await myEAAccountsContract.hasRole(adminRole, accounts[0].address)).to.equal(false)
-      expect(await myEAAccountsContract.hasRole(adminRole, accounts[10].address)).to.equal(true)
-    })
-  
-    it("Correct not full recovery voting", async function(){
-      await myEAAccountsContract.connect(accounts[1]).startRecoveryAccount(accounts[10].address)
-  
-      await myEAAccountsContract.connect(accounts[1]).voteRecoveryAccount(accounts[0].address, accounts[10].address)
-      await myEAAccountsContract.connect(accounts[2]).voteRecoveryAccount(accounts[0].address, accounts[10].address)
-  
-      expect(await myEAAccountsContract.hasRole(adminRole, accounts[0].address)).to.equal(true)
-      expect(await myEAAccountsContract.hasRole(adminRole, accounts[10].address)).to.equal(false)
-    })
-  })
-});
+})
