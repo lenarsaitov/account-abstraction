@@ -1,0 +1,31 @@
+{
+  "name": "account-abstraction",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lenarsaitov/account-abstraction.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/lenarsaitov/account-abstraction/issues"
+  },
+  "homepage": "https://github.com/lenarsaitov/account-abstraction#readme",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^1.0.2",
+    "@nomiclabs/hardhat-ethers": "^2.2.1",
+    "@openzeppelin/hardhat-upgrades": "^1.21.0",
+    "ethers": "^5.7.2",
+    "hardhat": "^2.12.2"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.7.3",
+    "solidity-coverage": "^0.8.2"
+  }
+}
