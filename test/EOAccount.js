@@ -7,6 +7,7 @@ let EAAccountsContract
 let myEAAccountsContract
 let adminRole
 let trustedRole
+let amount = 1000
 
 describe("EOAccount", function (){
   beforeEach(async function(){
@@ -27,11 +28,22 @@ describe("EOAccount", function (){
   })
 
   describe("Main logic", function(){
-    it("Fill amount is correct", async function(){
-      let amount = 1000
-      await myEAAccountsContract.fillAmount({value: amount})
-
-      expect(await myEAAccountsContract.totalAmount()).to.equal(amount)
+    describe("Amount of smart contract functionallity", function(){
+      it("Fill amount is correct", async function(){
+        await myEAAccountsContract.fillAmount({value: amount})
+        expect(await myEAAccountsContract.totalAmount()).to.equal(amount)
+      })
+  
+      it("Withdraw amount is correct", async function(){
+        await myEAAccountsContract.fillAmount({value: 2*amount})
+        expect(await myEAAccountsContract.withdrawAmount(amount))
+        expect(await myEAAccountsContract.totalAmount()).to.equal(amount)
+      })
+  
+      it("Withdraw amount is correct if ask amount more than total", async function(){
+        await myEAAccountsContract.fillAmount({value: amount})
+        await expect(myEAAccountsContract.withdrawAmount(2*amount)).to.be.rejected
+      })
     })
 
     describe("Recover voting", function(){
@@ -77,6 +89,28 @@ describe("EOAccount", function (){
         await myEAAccountsContract.connect(accounts[1]).voteRecoveryAccount(accounts[10].address)
 
         await expect(myEAAccountsContract.connect(accounts[2]).voteRecoveryAccount(accounts[11].address)).to.be.reverted
+      })
+
+      it("Incorrect the start recovery by the equal same owner", async function(){
+        await expect(myEAAccountsContract.connect(accounts[1]).startRecoveryAccount(accounts[0].address)).to.be.reverted
+      })
+
+      it("Incorrect the same candidate (equal to owner) vote", async function(){
+        await myEAAccountsContract.connect(accounts[1]).startRecoveryAccount(accounts[10].address)    
+        await expect(myEAAccountsContract.connect(accounts[2]).voteRecoveryAccount(accounts[0].address)).to.be.reverted
+      })
+
+      it("Incorrect the owner start recovery", async function(){   
+        await expect(myEAAccountsContract.connect(accounts[0]).startRecoveryAccount(accounts[10].address)).to.be.reverted
+      })
+
+      it("Incorrect the owner do vote recovery", async function(){   
+        await myEAAccountsContract.connect(accounts[1]).startRecoveryAccount(accounts[10].address)    
+        await expect(myEAAccountsContract.connect(accounts[0]).voteRecoveryAccount(accounts[10].address)).to.be.reverted
+      })
+
+      it("Incorrect when vote recovery doesnt started", async function(){   
+        await expect(myEAAccountsContract.connect(accounts[1]).voteRecoveryAccount(accounts[10].address)).to.be.reverted
       })
 
       it("Reset voting", async function(){

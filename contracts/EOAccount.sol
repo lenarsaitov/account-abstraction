@@ -8,8 +8,8 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract EOAccount is AccessControl, Ownable{
     bytes32 public constant TRUSTED_ACCOUNT_ROLE = keccak256("TRUSTED_ACCOUNT_ROLE");
-    address[] public trustedAccounts;
-    IERC20 public token;
+    address[] private trustedAccounts;
+    IERC20 private token;
 
     constructor(string memory _name, string memory _symbol){
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -23,10 +23,17 @@ contract EOAccount is AccessControl, Ownable{
         mapping(address => bool) voteUnique;
     }
 
-    Voting public voting;
+    Voting private voting;
 
     // Fill amount
     function fillAmount() external payable{
+    }
+
+    // Withdraw amount
+    function withdrawAmount(uint amount) external onlyOwner{
+        require(amount < address(this).balance, "Amount of contract less than sended amount");
+
+        payable(address(msg.sender)).transfer(amount);
     }
 
     // Get total amount of contract
@@ -69,24 +76,11 @@ contract EOAccount is AccessControl, Ownable{
         voting.candidate = address(0);
     }
 
-    // End voting to recovery account
-    function _resetAnyRecoveryAccount() private {
-        _resetVotes();
-
-        voting.isActual = false;
-        voting.candidate = address(0);
-    }
-
     // Add vote to recovery account
     function voteRecoveryAccount(address _candidate) external onlyRole(TRUSTED_ACCOUNT_ROLE) {
         require(voting.isActual, "Vote recovery was not started");
         require(!voting.voteUnique[msg.sender], "You already voted");
-
-        if (_candidate != voting.candidate){
-            _resetAnyRecoveryAccount();
-
-            require(false, "There is not actual candidate for recover, this voting is canceling, so start new voting");
-        }
+        require(_candidate == voting.candidate, "There is not actual candidate for recover, this voting is canceling, so start new voting");
 
         voting.countVotesFor++;
         voting.voteUnique[msg.sender] = true;
