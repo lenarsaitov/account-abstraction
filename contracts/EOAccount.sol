@@ -6,33 +6,36 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
+/// @title Balance contract for interact with real ethers
+/// @author Lenar Saitov
 contract Balance is Ownable{
-    // Fill amount
+    /// @notice Fill amount
     function fillAmount() external onlyOwner payable{
     }
 
-    // Withdraw amount
+    /// @notice Withdraw amount
     function withdrawAll() external onlyOwner{
         payable(address(msg.sender)).transfer(address(this).balance);
     }
 
-    // Get total amount of contract
+    /// @notice Get total amount of contract
     function totalAmount() external view onlyOwner returns(uint256){
         return address(this).balance;
     }
 
 }
 
-contract EOAccount is AccessControl, Balance{
+/// @title AccountRecovery contract for implement recovery account by trusted accounts
+/// @author Lenar Saitov
+contract AccountRecovery is Ownable, AccessControl{
     bytes32 public constant TRUSTED_ACCOUNT_ROLE = keccak256("TRUSTED_ACCOUNT_ROLE");
     address[] private trustedAccounts;
-    IERC20 private token;
 
-    constructor(string memory _name, string memory _symbol){
+    constructor(){
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        token = new ERC20(_name, _symbol);
     }
 
+    /// @notice Struct for voting accounting
     struct Voting{
         bool isActual;
         address candidate;
@@ -42,17 +45,17 @@ contract EOAccount is AccessControl, Balance{
 
     Voting private voting;
 
-    // Get count of trusted accounts
+    /// @notice Get count of trusted accounts
     function getCountTrustedAccounts() external view returns (uint256){
         return trustedAccounts.length;
     }
 
-    // Get understand whether he voted or not
+    /// @notice Get understand whether he voted or not
     function isVoted(address _voter) external onlyRole(TRUSTED_ACCOUNT_ROLE) view returns (bool){
         return voting.voteUnique[_voter];
     }
 
-    // Get voting started or not
+    /// @notice Get voting started or not
     function isVoteStarted() external onlyRole(TRUSTED_ACCOUNT_ROLE) view returns (bool){
         return voting.isActual;
     }
@@ -65,7 +68,7 @@ contract EOAccount is AccessControl, Balance{
         }
     }
 
-    // Start voting to recovery account
+    /// @notice Start voting to recovery account
     function startRecoveryAccount(address _candidate) external onlyRole(TRUSTED_ACCOUNT_ROLE) {
         require(this.owner() != _candidate, "There is the same address");
         _resetVotes();
@@ -74,7 +77,7 @@ contract EOAccount is AccessControl, Balance{
         voting.candidate = _candidate;
     }
 
-    // End voting to recovery account
+    /// @notice End voting to recovery account
     function resetAnyRecoveryAccount() external onlyRole(TRUSTED_ACCOUNT_ROLE) {
         _resetVotes();
 
@@ -82,7 +85,7 @@ contract EOAccount is AccessControl, Balance{
         voting.candidate = address(0);
     }
 
-    // Add vote to recovery account
+    /// @notice Add vote to recovery account
     function voteRecoveryAccount(address _candidate) external onlyRole(TRUSTED_ACCOUNT_ROLE) {
         require(voting.isActual, "Vote recovery was not started");
         require(!voting.voteUnique[msg.sender], "You already voted");
@@ -100,6 +103,7 @@ contract EOAccount is AccessControl, Balance{
         }
     }
 
+    /// @notice Modifier for revoke (see AccessControl docs) and delete account from trusted accounts set
     modifier toRevokeTrustedRoleAccount(bytes32 _role, address _accountAddress){
         _;
         _revokeRole(_role, _accountAddress);
@@ -116,13 +120,16 @@ contract EOAccount is AccessControl, Balance{
         }
     }
 
+    /// @notice Renounce some role from account (only by self account)
     function renounceRole(bytes32 _role, address _accountAddress) public override onlyRole(TRUSTED_ACCOUNT_ROLE) toRevokeTrustedRoleAccount(_role, _accountAddress){
         require(_accountAddress == _msgSender(), "AccessControl: can only renounce roles for self");
     }
 
+    /// @notice Revoke some role from account (only by admin)
     function revokeRole(bytes32 _role, address _accountAddress) public override onlyRole(DEFAULT_ADMIN_ROLE) toRevokeTrustedRoleAccount(_role, _accountAddress){
     }
 
+    /// @notice Grant some role to account (only by admin)
     function grantRole(bytes32 _role, address _accountAddress) public override onlyRole(DEFAULT_ADMIN_ROLE){
         _grantRole(_role, _accountAddress);
 
@@ -133,5 +140,45 @@ contract EOAccount is AccessControl, Balance{
         }
 
         trustedAccounts.push(_accountAddress);
+    }
+}
+
+
+/// @title EOAccount wallet contract for emulate account abstraction concept
+/// @author Lenar Saitov
+contract EOAccount is Balance, AccountRecovery{
+    IERC20 public token;
+
+    constructor (IERC20 _token) {
+        token = _token;
+    }
+
+    /// @notice Get count of tokens
+    function countTokens() public view onlyOwner returns(uint256) {
+        return token.balanceOf(msg.sender);
+    }
+
+    /// @notice Get tokens
+    function getTokens(uint256 _amount) external onlyOwner{
+        require(_amount > 0, "Need to send at least some tokens");
+        require(_amount <= token.balanceOf(address(this)), "Not enough tokens in token balance");
+
+        token.transfer(msg.sender, _amount);
+    }
+
+    /// @notice Send tokens
+    function sendTokens(address recipient, uint256 _amount) external onlyOwner{
+        require(_amount > 0, "Need to send at least some tokens");
+        require(_amount <= countTokens(), "Not enough tokens");
+
+        token.transferFrom(msg.sender, recipient, _amount);
+    }
+
+    /// @notice Approve get amount transaction
+    function approveDebitTokens(address spender, uint256 _amount) external onlyOwner {
+        require(_amount > 0, "Need to send at least some tokens");
+        require(_amount <= countTokens(), "Not enough tokens");
+
+        token.approve(spender, _amount);
     }
 }

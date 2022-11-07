@@ -2,169 +2,211 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { string } = require("hardhat/internal/core/params/argumentTypes");
 
+const { deployMockContract } = require('@ethereum-waffle/mock-contract');
+const IERC20 = require('../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json');
+
 let accounts
-let EAAccountsContract
-let myEAAccountsContract
+let EOAccountsContract
+let myEOAccountsContract
 let adminRole
 let trustedRole
 let amount = 1000
+let mockERC20
 
 describe("EOAccount", function (){
   beforeEach(async function(){
     accounts = await ethers.getSigners();
 
-    EAAccountsContract = await ethers.getContractFactory("EOAccount", accounts[0])
-    myEAAccountsContract = await EAAccountsContract.deploy("Test token", "TTN")
+    mockERC20 = await deployMockContract(accounts[10], IERC20.abi);
 
-    await myEAAccountsContract.deployed()
+    EOAccountsContract = await ethers.getContractFactory("EOAccount", accounts[0])
+    myEOAccountsContract = await EOAccountsContract.deploy(mockERC20.address)
 
-    adminRole = await myEAAccountsContract.DEFAULT_ADMIN_ROLE()
-    trustedRole = await myEAAccountsContract.TRUSTED_ACCOUNT_ROLE()
+    await myEOAccountsContract.deployed()
+    adminRole = await myEOAccountsContract.DEFAULT_ADMIN_ROLE()
+    trustedRole = await myEOAccountsContract.TRUSTED_ACCOUNT_ROLE()
 
-    expect(await myEAAccountsContract.owner()).to.equal(accounts[0].address)
-    await myEAAccountsContract.grantRole(trustedRole, accounts[1].address)
-    await myEAAccountsContract.grantRole(trustedRole, accounts[2].address)
-    await myEAAccountsContract.grantRole(trustedRole, accounts[3].address)
+    expect(await myEOAccountsContract.owner()).to.equal(accounts[0].address)
+    await myEOAccountsContract.grantRole(trustedRole, accounts[1].address)
+    await myEOAccountsContract.grantRole(trustedRole, accounts[2].address)
+    await myEOAccountsContract.grantRole(trustedRole, accounts[3].address)
   })
 
   describe("Main logic", function(){
-    describe("Amount of smart contract functionallity", function(){
+    describe("Balance", function(){
       it("Fill amount is correct", async function(){
-        await myEAAccountsContract.fillAmount({value: amount})
-        expect(await myEAAccountsContract.totalAmount()).to.equal(amount)
+        await myEOAccountsContract.fillAmount({value: amount})
+        expect(await myEOAccountsContract.totalAmount()).to.equal(amount)
       })
   
       it("Fill amount without amount", async function(){
-        await myEAAccountsContract.fillAmount()
-        expect(await myEAAccountsContract.totalAmount()).to.equal(0)
+        await myEOAccountsContract.fillAmount()
+        expect(await myEOAccountsContract.totalAmount()).to.equal(0)
       })
 
       it("Withdraw amount is correct", async function(){
-        await myEAAccountsContract.fillAmount({value: amount})
-        expect(await myEAAccountsContract.withdrawAll())
-        expect(await myEAAccountsContract.totalAmount()).to.equal(0)
+        await myEOAccountsContract.fillAmount({value: amount})
+        expect(await myEOAccountsContract.withdrawAll())
+        expect(await myEOAccountsContract.totalAmount()).to.equal(0)
+      })
+    })
+
+    describe("Token interaction", function(){
+      it("Token count", async function(){
+        await mockERC20.mock.balanceOf.returns(amount)
+        expect(await myEOAccountsContract.countTokens()).to.equal(amount)
+      })
+  
+      it("Get tokens by owner", async function(){
+        await mockERC20.mock.balanceOf.returns(2*amount)
+        await mockERC20.mock.transfer.withArgs(accounts[0].address, amount).returns(true)
+        await myEOAccountsContract.getTokens(amount)
+      })
+
+      it("Get tokens by other", async function(){
+        await expect(myEOAccountsContract.getTokens(amount)).to.be.reverted
+      })
+
+      it("Send tokens by owner", async function(){
+        await mockERC20.mock.balanceOf.returns(2*amount)
+        await mockERC20.mock.transferFrom.withArgs(accounts[0].address, accounts[1].address, amount).returns(true)
+        await myEOAccountsContract.sendTokens(accounts[1].address, amount)
+      })
+
+      it("Send tokens by other", async function(){
+        await expect(myEOAccountsContract.sendTokens(accounts[1].address, amount)).to.be.reverted
+      })
+
+      it("Approve debbiting tokens by owner", async function(){
+        await mockERC20.mock.balanceOf.returns(2*amount)
+        await mockERC20.mock.approve.withArgs(accounts[1].address, amount).returns(true)
+        await myEOAccountsContract.approveDebitTokens(accounts[1].address, amount)
+      })
+
+      it("Approve debbiting tokens by other", async function(){
+        await expect(myEOAccountsContract.approveDebitTokens(accounts[1].address, amount)).to.be.reverted
       })
     })
 
     describe("Recover voting", function(){
       it("Full recovery correct voting by trusted accounts", async function(){
-        await myEAAccountsContract.connect(accounts[1]).startRecoveryAccount(accounts[10].address)
+        await myEOAccountsContract.connect(accounts[1]).startRecoveryAccount(accounts[10].address)
     
-        await myEAAccountsContract.connect(accounts[1]).voteRecoveryAccount(accounts[10].address)
-        await myEAAccountsContract.connect(accounts[2]).voteRecoveryAccount(accounts[10].address)
-        await myEAAccountsContract.connect(accounts[3]).voteRecoveryAccount(accounts[10].address)
+        await myEOAccountsContract.connect(accounts[1]).voteRecoveryAccount(accounts[10].address)
+        await myEOAccountsContract.connect(accounts[2]).voteRecoveryAccount(accounts[10].address)
+        await myEOAccountsContract.connect(accounts[3]).voteRecoveryAccount(accounts[10].address)
 
-        expect(await myEAAccountsContract.hasRole(adminRole, accounts[0].address)).to.equal(false)
-        expect(await myEAAccountsContract.hasRole(adminRole, accounts[10].address)).to.equal(true)
+        expect(await myEOAccountsContract.hasRole(adminRole, accounts[0].address)).to.equal(false)
+        expect(await myEOAccountsContract.hasRole(adminRole, accounts[10].address)).to.equal(true)
 
-        expect(await myEAAccountsContract.owner()).to.equal(accounts[10].address)
+        expect(await myEOAccountsContract.owner()).to.equal(accounts[10].address)
       })
     
       it("Not full recovery correct voting by trusted accounts", async function(){
-        await myEAAccountsContract.connect(accounts[1]).startRecoveryAccount(accounts[10].address)
+        await myEOAccountsContract.connect(accounts[1]).startRecoveryAccount(accounts[10].address)
 
-        await myEAAccountsContract.connect(accounts[1]).voteRecoveryAccount(accounts[10].address)
-        await myEAAccountsContract.connect(accounts[2]).voteRecoveryAccount(accounts[10].address)
+        await myEOAccountsContract.connect(accounts[1]).voteRecoveryAccount(accounts[10].address)
+        await myEOAccountsContract.connect(accounts[2]).voteRecoveryAccount(accounts[10].address)
     
-        expect(await myEAAccountsContract.hasRole(adminRole, accounts[0].address)).to.equal(true)
-        expect(await myEAAccountsContract.hasRole(adminRole, accounts[10].address)).to.equal(false)
+        expect(await myEOAccountsContract.hasRole(adminRole, accounts[0].address)).to.equal(true)
+        expect(await myEOAccountsContract.hasRole(adminRole, accounts[10].address)).to.equal(false)
       })
 
       it("See voted trusted account by trusted account", async function(){
-        await myEAAccountsContract.connect(accounts[1]).startRecoveryAccount(accounts[10].address)
-        await myEAAccountsContract.connect(accounts[2]).voteRecoveryAccount(accounts[10].address)
+        await myEOAccountsContract.connect(accounts[1]).startRecoveryAccount(accounts[10].address)
+        await myEOAccountsContract.connect(accounts[2]).voteRecoveryAccount(accounts[10].address)
 
-        expect(await myEAAccountsContract.connect(accounts[1]).isVoted(accounts[2].address)).to.equal(true)
+        expect(await myEOAccountsContract.connect(accounts[1]).isVoted(accounts[2].address)).to.equal(true)
       })
 
       it("Dont see voted trusted account by admin account", async function(){
-        await myEAAccountsContract.connect(accounts[1]).startRecoveryAccount(accounts[10].address)
-        await myEAAccountsContract.connect(accounts[2]).voteRecoveryAccount(accounts[10].address)
+        await myEOAccountsContract.connect(accounts[1]).startRecoveryAccount(accounts[10].address)
+        await myEOAccountsContract.connect(accounts[2]).voteRecoveryAccount(accounts[10].address)
 
-        await expect(myEAAccountsContract.connect(accounts[0]).isVoted(accounts[2].address)).to.reverted
+        await expect(myEOAccountsContract.connect(accounts[0]).isVoted(accounts[2].address)).to.reverted
       })
 
       it("Dont see voted trusted account by alias account", async function(){
-        await myEAAccountsContract.connect(accounts[1]).startRecoveryAccount(accounts[10].address)
-        await myEAAccountsContract.connect(accounts[2]).voteRecoveryAccount(accounts[10].address)
+        await myEOAccountsContract.connect(accounts[1]).startRecoveryAccount(accounts[10].address)
+        await myEOAccountsContract.connect(accounts[2]).voteRecoveryAccount(accounts[10].address)
 
-        await expect(myEAAccountsContract.connect(accounts[10]).isVoted(accounts[2].address)).to.reverted
+        await expect(myEOAccountsContract.connect(accounts[10]).isVoted(accounts[2].address)).to.reverted
       })
 
       it("Dont voting recovery when double votes by trusted account", async function(){
-        await myEAAccountsContract.connect(accounts[1]).startRecoveryAccount(accounts[10].address)
-        await myEAAccountsContract.connect(accounts[1]).voteRecoveryAccount(accounts[10].address)
+        await myEOAccountsContract.connect(accounts[1]).startRecoveryAccount(accounts[10].address)
+        await myEOAccountsContract.connect(accounts[1]).voteRecoveryAccount(accounts[10].address)
         
-        await expect(myEAAccountsContract.connect(accounts[1]).voteRecoveryAccount(accounts[10].address)).to.be.reverted
+        await expect(myEOAccountsContract.connect(accounts[1]).voteRecoveryAccount(accounts[10].address)).to.be.reverted
       })
       
       it("Dont voting recovery (by trusted account) when vote to other candidate than was when start recovery", async function(){
-        await myEAAccountsContract.connect(accounts[1]).startRecoveryAccount(accounts[10].address)    
-        await myEAAccountsContract.connect(accounts[1]).voteRecoveryAccount(accounts[10].address)
+        await myEOAccountsContract.connect(accounts[1]).startRecoveryAccount(accounts[10].address)    
+        await myEOAccountsContract.connect(accounts[1]).voteRecoveryAccount(accounts[10].address)
 
-        await expect(myEAAccountsContract.connect(accounts[2]).voteRecoveryAccount(accounts[11].address)).to.be.reverted
+        await expect(myEOAccountsContract.connect(accounts[2]).voteRecoveryAccount(accounts[11].address)).to.be.reverted
       })
 
       it("Dont start recovery (by trusted account) to candidate with the equal to owner", async function(){
-        await expect(myEAAccountsContract.connect(accounts[1]).startRecoveryAccount(accounts[0].address)).to.be.reverted
+        await expect(myEOAccountsContract.connect(accounts[1]).startRecoveryAccount(accounts[0].address)).to.be.reverted
       })
 
       it("Dont voting recovery (by trusted account) when vote to other (admin) candidate than was when start recovery", async function(){
-        await myEAAccountsContract.connect(accounts[1]).startRecoveryAccount(accounts[10].address)    
-        await expect(myEAAccountsContract.connect(accounts[2]).voteRecoveryAccount(accounts[0].address)).to.be.reverted
+        await myEOAccountsContract.connect(accounts[1]).startRecoveryAccount(accounts[10].address)    
+        await expect(myEOAccountsContract.connect(accounts[2]).voteRecoveryAccount(accounts[0].address)).to.be.reverted
       })
 
       it("Dont start recovery by admin account", async function(){
-        await expect(myEAAccountsContract.connect(accounts[0]).startRecoveryAccount(accounts[10].address)).to.be.reverted
+        await expect(myEOAccountsContract.connect(accounts[0]).startRecoveryAccount(accounts[10].address)).to.be.reverted
       })
 
       it("Dont vote to recovery by admin account", async function(){
-        await myEAAccountsContract.connect(accounts[1]).startRecoveryAccount(accounts[10].address)    
-        await expect(myEAAccountsContract.connect(accounts[0]).voteRecoveryAccount(accounts[10].address)).to.be.reverted
+        await myEOAccountsContract.connect(accounts[1]).startRecoveryAccount(accounts[10].address)    
+        await expect(myEOAccountsContract.connect(accounts[0]).voteRecoveryAccount(accounts[10].address)).to.be.reverted
       })
 
       it("Dont vote recovery when voting doesnt started", async function(){   
-        await expect(myEAAccountsContract.connect(accounts[1]).voteRecoveryAccount(accounts[10].address)).to.be.reverted
+        await expect(myEOAccountsContract.connect(accounts[1]).voteRecoveryAccount(accounts[10].address)).to.be.reverted
       })
 
       it("Reset recovery when voting recovery not finished", async function(){
-        await myEAAccountsContract.connect(accounts[1]).startRecoveryAccount(accounts[10].address)
-        expect(await myEAAccountsContract.connect(accounts[1]).isVoteStarted()).to.equal(true)
-        await myEAAccountsContract.connect(accounts[1]).voteRecoveryAccount(accounts[10].address)
-        await myEAAccountsContract.connect(accounts[2]).resetAnyRecoveryAccount()
+        await myEOAccountsContract.connect(accounts[1]).startRecoveryAccount(accounts[10].address)
+        expect(await myEOAccountsContract.connect(accounts[1]).isVoteStarted()).to.equal(true)
+        await myEOAccountsContract.connect(accounts[1]).voteRecoveryAccount(accounts[10].address)
+        await myEOAccountsContract.connect(accounts[2]).resetAnyRecoveryAccount()
     
-        expect(await myEAAccountsContract.connect(accounts[1]).isVoteStarted()).to.equal(false)
-        expect(await myEAAccountsContract.hasRole(adminRole, accounts[0].address)).to.equal(true)
-        expect(await myEAAccountsContract.hasRole(adminRole, accounts[10].address)).to.equal(false)
+        expect(await myEOAccountsContract.connect(accounts[1]).isVoteStarted()).to.equal(false)
+        expect(await myEOAccountsContract.hasRole(adminRole, accounts[0].address)).to.equal(true)
+        expect(await myEOAccountsContract.hasRole(adminRole, accounts[10].address)).to.equal(false)
       })
 
       it("Reset recovery when voting recovery not started", async function(){
-        expect(await myEAAccountsContract.connect(accounts[1]).isVoteStarted()).to.equal(false)
-        await myEAAccountsContract.connect(accounts[2]).resetAnyRecoveryAccount()
-        expect(await myEAAccountsContract.connect(accounts[1]).isVoteStarted()).to.equal(false)
+        expect(await myEOAccountsContract.connect(accounts[1]).isVoteStarted()).to.equal(false)
+        await myEOAccountsContract.connect(accounts[2]).resetAnyRecoveryAccount()
+        expect(await myEOAccountsContract.connect(accounts[1]).isVoteStarted()).to.equal(false)
 
-        expect(await myEAAccountsContract.hasRole(adminRole, accounts[0].address)).to.equal(true)
-        expect(await myEAAccountsContract.hasRole(adminRole, accounts[10].address)).to.equal(false)
+        expect(await myEOAccountsContract.hasRole(adminRole, accounts[0].address)).to.equal(true)
+        expect(await myEOAccountsContract.hasRole(adminRole, accounts[10].address)).to.equal(false)
       })
 
       it("Reset recovery dont when admin request", async function(){
-        await expect(myEAAccountsContract.connect(accounts[0]).resetAnyRecoveryAccount()).to.be.reverted
+        await expect(myEOAccountsContract.connect(accounts[0]).resetAnyRecoveryAccount()).to.be.reverted
       })
 
       it("Reset recovery dont when alias request", async function(){
-        await expect(myEAAccountsContract.connect(accounts[10]).resetAnyRecoveryAccount()).to.be.reverted
+        await expect(myEOAccountsContract.connect(accounts[10]).resetAnyRecoveryAccount()).to.be.reverted
       })
 
       it("Is vote started check by trusted account", async function(){
-        expect(await myEAAccountsContract.connect(accounts[1]).isVoteStarted()).to.equal(false)
+        expect(await myEOAccountsContract.connect(accounts[1]).isVoteStarted()).to.equal(false)
       })
 
       it("Is vote started dont check by admin account", async function(){
-        await expect(myEAAccountsContract.connect(accounts[0]).isVoteStarted()).to.be.reverted
+        await expect(myEOAccountsContract.connect(accounts[0]).isVoteStarted()).to.be.reverted
       })
 
       it("Is vote started dont check by alias account", async function(){
-        await expect(myEAAccountsContract.connect(accounts[10]).isVoteStarted()).to.be.reverted
+        await expect(myEOAccountsContract.connect(accounts[10]).isVoteStarted()).to.be.reverted
       })
 
     })
@@ -173,82 +215,82 @@ describe("EOAccount", function (){
   describe("Standart AccessControl", function(){
     describe("Accounts have correct roles", function(){
       it("Accounts have right role", async function(){
-        expect(await myEAAccountsContract.hasRole(adminRole, accounts[0].address)).to.equal(true)
-        expect(await myEAAccountsContract.hasRole(trustedRole, accounts[1].address)).to.equal(true)
-        expect(await myEAAccountsContract.hasRole(trustedRole, accounts[2].address)).to.equal(true)
-        expect(await myEAAccountsContract.hasRole(trustedRole, accounts[3].address)).to.equal(true)
+        expect(await myEOAccountsContract.hasRole(adminRole, accounts[0].address)).to.equal(true)
+        expect(await myEOAccountsContract.hasRole(trustedRole, accounts[1].address)).to.equal(true)
+        expect(await myEOAccountsContract.hasRole(trustedRole, accounts[2].address)).to.equal(true)
+        expect(await myEOAccountsContract.hasRole(trustedRole, accounts[3].address)).to.equal(true)
       })
     
       it("Accounts dont have wrong role", async function(){
-        expect(await myEAAccountsContract.hasRole(trustedRole, accounts[0].address)).to.equal(false)
-        expect(await myEAAccountsContract.hasRole(adminRole, accounts[1].address)).to.equal(false)
-        expect(await myEAAccountsContract.hasRole(adminRole, accounts[2].address)).to.equal(false)
-        expect(await myEAAccountsContract.hasRole(adminRole, accounts[3].address)).to.equal(false)
+        expect(await myEOAccountsContract.hasRole(trustedRole, accounts[0].address)).to.equal(false)
+        expect(await myEOAccountsContract.hasRole(adminRole, accounts[1].address)).to.equal(false)
+        expect(await myEOAccountsContract.hasRole(adminRole, accounts[2].address)).to.equal(false)
+        expect(await myEOAccountsContract.hasRole(adminRole, accounts[3].address)).to.equal(false)
       })  
     })
   
-    it("Correct transfer ownership by owner", async function(){
-      await myEAAccountsContract.transferOwnership(accounts[5].address)
+    it("Transfer ownership by owner", async function(){
+      await myEOAccountsContract.transferOwnership(accounts[5].address)
 
-      expect(await myEAAccountsContract.owner()).to.equal(accounts[5].address)
+      expect(await myEOAccountsContract.owner()).to.equal(accounts[5].address)
     })
   
-    it("Correct dont transfer ownership by trusted", async function(){
-      await expect(myEAAccountsContract.connect(accounts[1]).transferOwnership(accounts[5].address)).to.be.reverted
+    it("Dont transfer ownership by trusted", async function(){
+      await expect(myEOAccountsContract.connect(accounts[1]).transferOwnership(accounts[5].address)).to.be.reverted
     })
 
-    it("Correct dont transfer ownership by alias", async function(){
-      await expect(myEAAccountsContract.connect(accounts[10]).transferOwnership(accounts[5].address)).to.be.reverted
+    it("Dont transfer ownership by alias", async function(){
+      await expect(myEOAccountsContract.connect(accounts[10]).transferOwnership(accounts[5].address)).to.be.reverted
     })
 
     describe("Grant role", function(){
-      it("Correct grant role by admin", async function(){
-        await myEAAccountsContract.grantRole(trustedRole, accounts[5].address)
+      it("Grant role by admin", async function(){
+        await myEOAccountsContract.grantRole(trustedRole, accounts[5].address)
 
-        expect(await myEAAccountsContract.hasRole(trustedRole, accounts[5].address)).to.equal(true)
-        expect(await myEAAccountsContract.getCountTrustedAccounts()).to.equal(4)
+        expect(await myEOAccountsContract.hasRole(trustedRole, accounts[5].address)).to.equal(true)
+        expect(await myEOAccountsContract.getCountTrustedAccounts()).to.equal(4)
       })
     
-      it("Correct dont grant role by trusted", async function(){
-        await expect(myEAAccountsContract.connect(accounts[2]).grantRole(trustedRole, accounts[5].address)).to.be.reverted
+      it("Dont grant role by trusted", async function(){
+        await expect(myEOAccountsContract.connect(accounts[2]).grantRole(trustedRole, accounts[5].address)).to.be.reverted
       })
     
-      it("Correct dont grant role by alies", async function(){
-        await expect(myEAAccountsContract.connect(accounts[7]).grantRole(trustedRole, accounts[5].address)).to.be.reverted
+      it("Dont grant role by alies", async function(){
+        await expect(myEOAccountsContract.connect(accounts[7]).grantRole(trustedRole, accounts[5].address)).to.be.reverted
       })  
     })
   
     describe("Revoke role", function(){
-      it("Correct revoke trusted account role by admin", async function(){
-        await myEAAccountsContract.revokeRole(trustedRole, accounts[1].address)
+      it("Revoke trusted account role by admin", async function(){
+        await myEOAccountsContract.revokeRole(trustedRole, accounts[1].address)
 
-        expect(await myEAAccountsContract.hasRole(trustedRole, accounts[1].address)).to.equal(false)
-        expect(await myEAAccountsContract.getCountTrustedAccounts()).to.equal(2)
+        expect(await myEOAccountsContract.hasRole(trustedRole, accounts[1].address)).to.equal(false)
+        expect(await myEOAccountsContract.getCountTrustedAccounts()).to.equal(2)
       })
   
-      it("Correct dont revoke trusted account role by this trusted", async function(){
-        await expect(myEAAccountsContract.connect(accounts[1]).revokeRole(trustedRole, accounts[1].address)).to.be.reverted
+      it("Dont revoke trusted account role by this trusted", async function(){
+        await expect(myEOAccountsContract.connect(accounts[1]).revokeRole(trustedRole, accounts[1].address)).to.be.reverted
       })
   
-      it("Correct dont revoke trusted account role by other trusted", async function(){
-        await expect(myEAAccountsContract.connect(accounts[2]).revokeRole(trustedRole, accounts[1].address)).to.be.reverted
+      it("Dont revoke trusted account role by other trusted", async function(){
+        await expect(myEOAccountsContract.connect(accounts[2]).revokeRole(trustedRole, accounts[1].address)).to.be.reverted
       })
     })
   
     describe("Renounce role", function(){
-      it("Correct renounce role by trusted account", async function(){
-        await myEAAccountsContract.connect(accounts[1]).renounceRole(trustedRole, accounts[1].address)
+      it("Renounce role by trusted account", async function(){
+        await myEOAccountsContract.connect(accounts[1]).renounceRole(trustedRole, accounts[1].address)
 
-        expect(await myEAAccountsContract.hasRole(trustedRole, accounts[1].address)).to.equal(false)
-        expect(await myEAAccountsContract.getCountTrustedAccounts()).to.equal(2)
+        expect(await myEOAccountsContract.hasRole(trustedRole, accounts[1].address)).to.equal(false)
+        expect(await myEOAccountsContract.getCountTrustedAccounts()).to.equal(2)
       })
     
-      it("Correct dont renounce role by admin", async function(){
-        await expect(myEAAccountsContract.renounceRole(trustedRole, accounts[2].address)).to.be.reverted
+      it("Dont renounce role by admin", async function(){
+        await expect(myEOAccountsContract.renounceRole(trustedRole, accounts[2].address)).to.be.reverted
       })
     
-      it("Correct dont renounce role by alias account", async function(){
-        await expect(myEAAccountsContract.connect(accounts[6]).renounceRole(trustedRole, accounts[2].address)).to.be.reverted
+      it("Dont renounce role by alias account", async function(){
+        await expect(myEOAccountsContract.connect(accounts[6]).renounceRole(trustedRole, accounts[2].address)).to.be.reverted
       })
     })
   })
