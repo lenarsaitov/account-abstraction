@@ -51,6 +51,11 @@ contract EOAccount is AccessControl, Ownable{
         return voting.voteUnique[_voter];
     }
 
+    // Get voting started or not
+    function isVoteStarted() external onlyRole(TRUSTED_ACCOUNT_ROLE) view returns (bool){
+        return voting.isActual;
+    }
+
     function _resetVotes() private{
         voting.countVotesFor = 0;
 
