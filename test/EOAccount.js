@@ -35,23 +35,57 @@ describe("EOAccount", function (){
       it("Correct full recovery voting", async function(){
         await myEAAccountsContract.connect(accounts[1]).startRecoveryAccount(accounts[10].address)
     
-        await myEAAccountsContract.connect(accounts[1]).voteRecoveryAccount(accounts[0].address, accounts[10].address)
-        await myEAAccountsContract.connect(accounts[2]).voteRecoveryAccount(accounts[0].address, accounts[10].address)
-        await myEAAccountsContract.connect(accounts[3]).voteRecoveryAccount(accounts[0].address, accounts[10].address)
-    
+        await myEAAccountsContract.connect(accounts[1]).voteRecoveryAccount(accounts[10].address)
+        await myEAAccountsContract.connect(accounts[2]).voteRecoveryAccount(accounts[10].address)
+        await myEAAccountsContract.connect(accounts[3]).voteRecoveryAccount(accounts[10].address)
+
         expect(await myEAAccountsContract.hasRole(adminRole, accounts[0].address)).to.equal(false)
         expect(await myEAAccountsContract.hasRole(adminRole, accounts[10].address)).to.equal(true)
+
+        expect(await myEAAccountsContract.owner()).to.equal(accounts[10].address)
       })
     
       it("Correct not full recovery voting", async function(){
         await myEAAccountsContract.connect(accounts[1]).startRecoveryAccount(accounts[10].address)
     
-        await myEAAccountsContract.connect(accounts[1]).voteRecoveryAccount(accounts[0].address, accounts[10].address)
-        await myEAAccountsContract.connect(accounts[2]).voteRecoveryAccount(accounts[0].address, accounts[10].address)
+        await myEAAccountsContract.connect(accounts[1]).voteRecoveryAccount(accounts[10].address)
+        await myEAAccountsContract.connect(accounts[2]).voteRecoveryAccount(accounts[10].address)
     
         expect(await myEAAccountsContract.hasRole(adminRole, accounts[0].address)).to.equal(true)
         expect(await myEAAccountsContract.hasRole(adminRole, accounts[10].address)).to.equal(false)
       })
+
+      it("See voted by address", async function(){
+        await myEAAccountsContract.connect(accounts[1]).startRecoveryAccount(accounts[10].address)
+        await myEAAccountsContract.connect(accounts[2]).voteRecoveryAccount(accounts[10].address)
+
+        expect(await myEAAccountsContract.connect(accounts[1]).isVoted(accounts[2].address)).to.equal(true)
+      })
+
+      it("Incorrect double votes", async function(){
+        await myEAAccountsContract.connect(accounts[1]).startRecoveryAccount(accounts[10].address)
+        await myEAAccountsContract.connect(accounts[1]).voteRecoveryAccount(accounts[10].address)
+        
+        await expect(myEAAccountsContract.connect(accounts[1]).voteRecoveryAccount(accounts[10].address)).to.be.reverted
+      })
+
+      it("Incorrect other candidate vote", async function(){
+        await myEAAccountsContract.connect(accounts[1]).startRecoveryAccount(accounts[10].address)    
+        await myEAAccountsContract.connect(accounts[1]).voteRecoveryAccount(accounts[10].address)
+
+        await expect(myEAAccountsContract.connect(accounts[2]).voteRecoveryAccount(accounts[11].address)).to.be.reverted
+      })
+
+      it("End voting", async function(){
+        await myEAAccountsContract.connect(accounts[1]).startRecoveryAccount(accounts[10].address)
+    
+        await myEAAccountsContract.connect(accounts[1]).voteRecoveryAccount(accounts[10].address)
+        await myEAAccountsContract.connect(accounts[2]).endAnyRecoveryAccount()
+    
+        expect(await myEAAccountsContract.hasRole(adminRole, accounts[0].address)).to.equal(true)
+        expect(await myEAAccountsContract.hasRole(adminRole, accounts[10].address)).to.equal(false)
+      })
+
     })
   })
 
