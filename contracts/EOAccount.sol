@@ -39,6 +39,11 @@ contract EOAccount is AccessControl, Ownable{
         return address(this).balance;
     }
 
+    // Get count of trusted accounts
+    function getCountTrustedAccounts() external view returns (uint256){
+        return trustedAccounts.length;
+    }
+
     // Get understand whether he voted or not
     function isVoted(address _voter) external onlyRole(TRUSTED_ACCOUNT_ROLE) view returns (bool){
         return voting.voteUnique[_voter];
@@ -62,7 +67,7 @@ contract EOAccount is AccessControl, Ownable{
     }
 
     // End voting to recovery account
-    function endAnyRecoveryAccount() external onlyRole(TRUSTED_ACCOUNT_ROLE) {
+    function resetAnyRecoveryAccount() external onlyRole(TRUSTED_ACCOUNT_ROLE) {
         _resetVotes();
 
         voting.isActual = false;
@@ -70,7 +75,7 @@ contract EOAccount is AccessControl, Ownable{
     }
 
     // End voting to recovery account
-    function _endAnyRecoveryAccount() private {
+    function _resetAnyRecoveryAccount() private {
         _resetVotes();
 
         voting.isActual = false;
@@ -83,7 +88,7 @@ contract EOAccount is AccessControl, Ownable{
         require(!voting.voteUnique[msg.sender], "You already voted");
 
         if (_candidate != voting.candidate){
-            _endAnyRecoveryAccount();
+            _resetAnyRecoveryAccount();
 
             require(false, "There is not actual candidate for recover, this voting is canceling, so start new voting");
         }
@@ -100,6 +105,43 @@ contract EOAccount is AccessControl, Ownable{
         }
     }
 
-    //TODO revoke and renounce logic (delete from trustedAccounts and voting.voteUnique)
-    //TODO grant role logic (add to trustedAccounts and voting.voteUnique)
+    function _revokeTrustedRoleAccount(bytes32 _role, address _accountAddress) private{
+        _revokeRole(_role, _accountAddress);
+        if (_role == TRUSTED_ACCOUNT_ROLE){
+            for (uint256 i = 0; i < trustedAccounts.length; ++i) {
+                if (_accountAddress == trustedAccounts[i]){
+                    voting.voteUnique[_accountAddress] = false;
+                    trustedAccounts[i] = trustedAccounts[trustedAccounts.length-1];
+                    trustedAccounts.pop();
+
+                    break;
+                }
+            }
+        }
+    }
+
+    function renounceRole(bytes32 _role, address _accountAddress) public virtual override{
+        require(_accountAddress == _msgSender(), "AccessControl: can only renounce roles for self");
+
+        _revokeTrustedRoleAccount(_role, _accountAddress);
+    }
+
+    function revokeRole(bytes32 _role, address _accountAddress) public virtual override{
+        require(hasRole(getRoleAdmin(_role), _msgSender()), "AccessControl: sender must be an admin to revoke");
+
+        _revokeTrustedRoleAccount(_role, _accountAddress);
+    }
+
+    function grantRole(bytes32 _role, address _accountAddress) public virtual override{
+        require(hasRole(getRoleAdmin(_role), _msgSender()), "AccessControl: sender must be an admin to grant");
+
+        _grantRole(_role, _accountAddress);
+        if (_role == TRUSTED_ACCOUNT_ROLE){
+            for (uint256 i = 0; i < trustedAccounts.length; ++i) {
+                require(_accountAddress != trustedAccounts[i], "This account address is already trusted account role");
+            }
+        }
+
+        trustedAccounts.push(_accountAddress);
+    }
 }

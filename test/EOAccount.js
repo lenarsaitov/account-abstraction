@@ -47,7 +47,7 @@ describe("EOAccount", function (){
     
       it("Correct not full recovery voting", async function(){
         await myEAAccountsContract.connect(accounts[1]).startRecoveryAccount(accounts[10].address)
-    
+
         await myEAAccountsContract.connect(accounts[1]).voteRecoveryAccount(accounts[10].address)
         await myEAAccountsContract.connect(accounts[2]).voteRecoveryAccount(accounts[10].address)
     
@@ -76,11 +76,10 @@ describe("EOAccount", function (){
         await expect(myEAAccountsContract.connect(accounts[2]).voteRecoveryAccount(accounts[11].address)).to.be.reverted
       })
 
-      it("End voting", async function(){
+      it("Reset voting", async function(){
         await myEAAccountsContract.connect(accounts[1]).startRecoveryAccount(accounts[10].address)
-    
         await myEAAccountsContract.connect(accounts[1]).voteRecoveryAccount(accounts[10].address)
-        await myEAAccountsContract.connect(accounts[2]).endAnyRecoveryAccount()
+        await myEAAccountsContract.connect(accounts[2]).resetAnyRecoveryAccount()
     
         expect(await myEAAccountsContract.hasRole(adminRole, accounts[0].address)).to.equal(true)
         expect(await myEAAccountsContract.hasRole(adminRole, accounts[10].address)).to.equal(false)
@@ -108,13 +107,16 @@ describe("EOAccount", function (){
   
     it("Correct transfer Ownership", async function(){
       await myEAAccountsContract.transferOwnership(accounts[5].address)
+
       expect(await myEAAccountsContract.owner()).to.equal(accounts[5].address)
     })
   
     describe("Grant role", function(){
       it("Correct grant role by admin", async function(){
         await myEAAccountsContract.grantRole(trustedRole, accounts[5].address)
+
         expect(await myEAAccountsContract.hasRole(trustedRole, accounts[5].address)).to.equal(true)
+        expect(await myEAAccountsContract.getCountTrustedAccounts()).to.equal(4)
       })
     
       it("Correct dont grant role by trusted", async function(){
@@ -129,7 +131,9 @@ describe("EOAccount", function (){
     describe("Revoke role", function(){
       it("Correct revoke trusted account role by admin", async function(){
         await myEAAccountsContract.revokeRole(trustedRole, accounts[1].address)
+
         expect(await myEAAccountsContract.hasRole(trustedRole, accounts[1].address)).to.equal(false)
+        expect(await myEAAccountsContract.getCountTrustedAccounts()).to.equal(2)
       })
   
       it("Correct dont revoke trusted account role by this trusted", async function(){
@@ -144,7 +148,9 @@ describe("EOAccount", function (){
     describe("Renounce role", function(){
       it("Correct renounce role by right person", async function(){
         await myEAAccountsContract.connect(accounts[1]).renounceRole(trustedRole, accounts[1].address)
+
         expect(await myEAAccountsContract.hasRole(trustedRole, accounts[1].address)).to.equal(false)
+        expect(await myEAAccountsContract.getCountTrustedAccounts()).to.equal(2)
       })
     
       it("Correct dont renounce role by admin", async function(){
