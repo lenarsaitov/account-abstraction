@@ -6,7 +6,24 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract EOAccount is AccessControl, Ownable{
+contract Balance is Ownable{
+    // Fill amount
+    function fillAmount() external onlyOwner payable{
+    }
+
+    // Withdraw amount
+    function withdrawAll() external onlyOwner{
+        payable(address(msg.sender)).transfer(address(this).balance);
+    }
+
+    // Get total amount of contract
+    function totalAmount() external view onlyOwner returns(uint256){
+        return address(this).balance;
+    }
+
+}
+
+contract EOAccount is AccessControl, Balance{
     bytes32 public constant TRUSTED_ACCOUNT_ROLE = keccak256("TRUSTED_ACCOUNT_ROLE");
     address[] private trustedAccounts;
     IERC20 private token;
@@ -24,22 +41,6 @@ contract EOAccount is AccessControl, Ownable{
     }
 
     Voting private voting;
-
-    // Fill amount
-    function fillAmount() external payable{
-    }
-
-    // Withdraw amount
-    function withdrawAmount(uint amount) external onlyOwner{
-        require(amount < address(this).balance, "Amount of contract less than sended amount");
-
-        payable(address(msg.sender)).transfer(amount);
-    }
-
-    // Get total amount of contract
-    function totalAmount() external view returns(uint256){
-        return address(this).balance;
-    }
 
     // Get count of trusted accounts
     function getCountTrustedAccounts() external view returns (uint256){
@@ -99,7 +100,8 @@ contract EOAccount is AccessControl, Ownable{
         }
     }
 
-    function _revokeTrustedRoleAccount(bytes32 _role, address _accountAddress) private{
+    modifier toRevokeTrustedRoleAccount(bytes32 _role, address _accountAddress){
+        _;
         _revokeRole(_role, _accountAddress);
         if (_role == TRUSTED_ACCOUNT_ROLE){
             for (uint256 i = 0; i < trustedAccounts.length; ++i) {
@@ -114,22 +116,16 @@ contract EOAccount is AccessControl, Ownable{
         }
     }
 
-    function renounceRole(bytes32 _role, address _accountAddress) public virtual override{
+    function renounceRole(bytes32 _role, address _accountAddress) public override onlyRole(TRUSTED_ACCOUNT_ROLE) toRevokeTrustedRoleAccount(_role, _accountAddress){
         require(_accountAddress == _msgSender(), "AccessControl: can only renounce roles for self");
-
-        _revokeTrustedRoleAccount(_role, _accountAddress);
     }
 
-    function revokeRole(bytes32 _role, address _accountAddress) public virtual override{
-        require(hasRole(getRoleAdmin(_role), _msgSender()), "AccessControl: sender must be an admin to revoke");
-
-        _revokeTrustedRoleAccount(_role, _accountAddress);
+    function revokeRole(bytes32 _role, address _accountAddress) public override onlyRole(DEFAULT_ADMIN_ROLE) toRevokeTrustedRoleAccount(_role, _accountAddress){
     }
 
-    function grantRole(bytes32 _role, address _accountAddress) public virtual override{
-        require(hasRole(getRoleAdmin(_role), _msgSender()), "AccessControl: sender must be an admin to grant");
-
+    function grantRole(bytes32 _role, address _accountAddress) public override onlyRole(DEFAULT_ADMIN_ROLE){
         _grantRole(_role, _accountAddress);
+
         if (_role == TRUSTED_ACCOUNT_ROLE){
             for (uint256 i = 0; i < trustedAccounts.length; ++i) {
                 require(_accountAddress != trustedAccounts[i], "This account address is already trusted account role");
