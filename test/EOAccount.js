@@ -63,7 +63,7 @@ describe("EOAccount", function (){
         await myEOAccountsContract.getTokens(amount)
       })
 
-      it("Get tokens by other", async function(){
+      it("Dont get tokens when by other", async function(){
         await expect(myEOAccountsContract.getTokens(amount)).to.be.reverted
       })
 
@@ -73,7 +73,7 @@ describe("EOAccount", function (){
         await myEOAccountsContract.sendTokens(accounts[1].address, amount)
       })
 
-      it("Send tokens by other", async function(){
+      it("Dont send tokens when by other", async function(){
         await expect(myEOAccountsContract.sendTokens(accounts[1].address, amount)).to.be.reverted
       })
 
@@ -83,7 +83,7 @@ describe("EOAccount", function (){
         await myEOAccountsContract.approveDebitTokens(accounts[1].address, amount)
       })
 
-      it("Approve debbiting tokens by other", async function(){
+      it("Dont approve debbiting tokens when by other", async function(){
         await expect(myEOAccountsContract.approveDebitTokens(accounts[1].address, amount)).to.be.reverted
       })
     })

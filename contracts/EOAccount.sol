@@ -18,7 +18,7 @@ contract Balance is Ownable{
         payable(address(msg.sender)).transfer(address(this).balance);
     }
 
-    /// @notice Get total amount of contract
+    /// @notice Returns total amount of contract
     function totalAmount() external view onlyOwner returns(uint256){
         return address(this).balance;
     }
@@ -45,17 +45,17 @@ contract AccountRecovery is Ownable, AccessControl{
 
     Voting private voting;
 
-    /// @notice Get count of trusted accounts
+    /// @notice Returns count of trusted accounts
     function getCountTrustedAccounts() external view returns (uint256){
         return trustedAccounts.length;
     }
 
-    /// @notice Get understand whether he voted or not
+    /// @notice Returns bool: understand whether he voted or not
     function isVoted(address _voter) external onlyRole(TRUSTED_ACCOUNT_ROLE) view returns (bool){
         return voting.voteUnique[_voter];
     }
 
-    /// @notice Get voting started or not
+    /// @notice Returns bool: voting started or not
     function isVoteStarted() external onlyRole(TRUSTED_ACCOUNT_ROLE) view returns (bool){
         return voting.isActual;
     }
@@ -153,7 +153,7 @@ contract EOAccount is Balance, AccountRecovery{
         token = _token;
     }
 
-    /// @notice Get count of tokens
+    /// @notice Returns count of tokens in this smart-contract
     function countTokens() public view onlyOwner returns(uint256) {
         return token.balanceOf(msg.sender);
     }
@@ -174,7 +174,7 @@ contract EOAccount is Balance, AccountRecovery{
         token.transferFrom(msg.sender, recipient, _amount);
     }
 
-    /// @notice Approve get amount transaction
+    /// @notice Approve debit transaction
     function approveDebitTokens(address spender, uint256 _amount) external onlyOwner {
         require(_amount > 0, "Need to send at least some tokens");
         require(_amount <= countTokens(), "Not enough tokens");
