@@ -11,6 +11,11 @@ contract EOAccount is AccessControl, Ownable{
     address[] public trustedAccounts;
     IERC20 public token;
 
+    constructor(string memory _name, string memory _symbol){
+        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        token = new ERC20(_name, _symbol);
+    }
+
     struct Voting{
         bool isActual;
         address candidate;
@@ -19,16 +24,6 @@ contract EOAccount is AccessControl, Ownable{
     }
 
     Voting public voting;
-
-    constructor(string memory _name, string memory _symbol, address[] memory _trustedAccounts){
-        for (uint256 i = 0; i < _trustedAccounts.length; ++i) {
-            _setupRole(TRUSTED_ACCOUNT_ROLE, _trustedAccounts[i]);
-            trustedAccounts.push(_trustedAccounts[i]);
-        }
-
-        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        token = new ERC20(_name, _symbol);
-    }
 
     // Fill amount
     function fillAmount() external payable{

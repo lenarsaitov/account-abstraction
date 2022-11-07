@@ -13,7 +13,7 @@ describe("EOAccount", function (){
     accounts = await ethers.getSigners();
 
     EAAccountsContract = await ethers.getContractFactory("EOAccount", accounts[0])
-    myEAAccountsContract = await EAAccountsContract.deploy("Tether USD", "USDT", [accounts[1].address, accounts[2].address, accounts[3].address])
+    myEAAccountsContract = await EAAccountsContract.deploy("Test token", "TTN")
 
     await myEAAccountsContract.deployed()
 
@@ -21,6 +21,9 @@ describe("EOAccount", function (){
     trustedRole = await myEAAccountsContract.TRUSTED_ACCOUNT_ROLE()
 
     expect(await myEAAccountsContract.owner()).to.equal(accounts[0].address)
+    await myEAAccountsContract.grantRole(trustedRole, accounts[1].address)
+    await myEAAccountsContract.grantRole(trustedRole, accounts[2].address)
+    await myEAAccountsContract.grantRole(trustedRole, accounts[3].address)
   })
 
   describe("Main logic", function(){
