@@ -39,7 +39,10 @@ contract EOAccount is AccessControl, Ownable{
         return address(this).balance;
     }
 
-    //TODO revoke and renounce (delete from trustedAccounts and voteUnique)
+    // Get understand whether he voted or not
+    function isVoted(address _voter) external onlyRole(TRUSTED_ACCOUNT_ROLE) view returns (bool){
+        return voting.voteUnique[_voter];
+    }
 
     function _resetVotes() private{
         voting.countVotesFor = 0;
@@ -47,11 +50,6 @@ contract EOAccount is AccessControl, Ownable{
         for (uint256 i = 0; i < trustedAccounts.length; ++i) {
             voting.voteUnique[trustedAccounts[i]] = false;
         }
-    }
-
-    // Get understand whether he voted or not
-    function isVoted(address _voter) external onlyRole(TRUSTED_ACCOUNT_ROLE) view returns (bool){
-        return voting.voteUnique[_voter];
     }
 
     // Start voting to recovery account
@@ -101,4 +99,7 @@ contract EOAccount is AccessControl, Ownable{
             voting.isActual = false;
         }
     }
+
+    //TODO revoke and renounce logic (delete from trustedAccounts and voting.voteUnique)
+    //TODO grant role logic (add to trustedAccounts and voting.voteUnique)
 }
