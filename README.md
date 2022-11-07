@@ -40,4 +40,5 @@
 Для эмуляции взаимодействия с токенами _IERC20_ был использован соответствующий [_Mock контракт_](https://ethereum-waffle.readthedocs.io/en/latest/mock-contract.html).
 
 Таблица покрытия кода выглядит следующим образом: 
-[](./docs/table.png)
+
+![](docs/table.png)
