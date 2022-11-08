@@ -6,9 +6,9 @@ import "./AccessControl.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-/// @title Account recovery implementation
+/// @title Recovery of ownership implementation
 /// @author Lenar Saitov
-contract AccountRecovery is Ownable, AccessControl{
+contract OwnershipRecovery is Ownable, AccessControl{
     bytes32 private constant TRUSTED_ACCOUNT_ROLE = keccak256("TRUSTED_ACCOUNT_ROLE");
     address[] private trustedAccounts;
 
@@ -158,7 +158,7 @@ contract AccountRecovery is Ownable, AccessControl{
  * @title Basic smart contract-based wallet implementation
  * @author Lenar Saitov
 */
-contract EOAccount is AccountRecovery{
+contract EOAccount is OwnershipRecovery{
     IERC20 public token;
 
     constructor (IERC20 _token) {

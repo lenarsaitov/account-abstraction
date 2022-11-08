@@ -1,6 +1,6 @@
 # Contract API
 
-## AccountRecovery
+## OwnershipRecovery
 
 ### getCountTrustedAccounts
 
