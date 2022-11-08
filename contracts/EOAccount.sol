@@ -173,7 +173,7 @@ contract EOAccount is AccountRecovery{
     }
 
     /**
-     * Get amount of all funds (only by owner).
+     * Get amount of funds available in the contract (only by owner).
      */
     function totalAmount() external view onlyOwner returns(uint256){
         return address(this).balance;
@@ -187,7 +187,7 @@ contract EOAccount is AccountRecovery{
     }
 
     /**
-     * Get amount of funds available in the contract (only by owner).
+     * Get amount of tokens available in the contract (only by owner).
      */
     function totalAmountTokens() public view onlyOwner returns(uint256) {
         return token.balanceOf(address(this));
