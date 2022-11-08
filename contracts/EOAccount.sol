@@ -106,11 +106,13 @@ contract AccountRecovery is Ownable, AccessControl{
      * @param _accountAddress the address of account
      */
     function grantTrustedRole(address _accountAddress) external onlyRole(DEFAULT_ADMIN_ROLE){
-        _grantRole(TRUSTED_ACCOUNT_ROLE, _accountAddress);
+        require(msg.sender != _accountAddress, "Administrator cannot have trusted role");
 
         for (uint256 i = 0; i < trustedAccounts.length; ++i) {
             require(_accountAddress != trustedAccounts[i], "This account address is already trusted account role");
         }
+
+        _grantRole(TRUSTED_ACCOUNT_ROLE, _accountAddress);
 
         trustedAccounts.push(_accountAddress);
     }

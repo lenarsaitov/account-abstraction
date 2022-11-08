@@ -274,6 +274,10 @@ describe("EOAccount", function (){
         expect(await myEOAccountsContract.getCountTrustedAccounts()).to.equal(4)
       })
 
+      it("Dont grant trusted role by admin to slef", async function(){
+        await expect(myEOAccountsContract.grantTrustedRole(accounts[0].address)).to.be.reverted
+      })
+
       it("Dont grant trusted role by admin, becouse double granting", async function(){
         await myEOAccountsContract.grantTrustedRole(accounts[5].address)
         expect(await myEOAccountsContract.hasTrustedRole(accounts[5].address)).to.equal(true)
