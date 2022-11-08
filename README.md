@@ -1,6 +1,6 @@
 ### Smart contract-based wallet
 
-В данном проекте разработан смарт контракт, [дублирующий](https://www.argent.xyz/blog/wtf-is-account-abstraction/) некоторую логику _EOA аккаунтов (Externally Owned Accounts)_:
+В данном проекте разработан смарт контракт, [дублирующий](https://www.argent.xyz/blog/wtf-is-account-abstraction/) некоторую логику _EO аккаунтов (Externally Owned Accounts)_:
 - Получение токенов 
 - Отправка токенов
 - Подпись транзакций 
@@ -16,6 +16,8 @@
 [Part II: WTF is Account Abstraction](https://archive.md/OESa5#selection-243.0-246.0)
 
 [Why EOA Wallets are a Threat to the Future of Blockchain](https://www.argent.xyz/blog/self-custody-mass-adoption/)
+
+________
 
 ### Структура проекта
 
@@ -35,6 +37,7 @@
 
 [Solidity Style Guide (Part II)](https://medium.com/@ivanlieskov/solidity-style-guide-part-ii-23ac3b10fdfb)
 
+________
 ### Функционал смены владельца доверенными лицами
 
 Данный функционал был реализован с использованием определенных ___модификаторов___ (см.  _onlyOwner, onlyRole, toRevokeTrustedRoleAccount_ и т.д.).
@@ -76,12 +79,15 @@ voteRecoveryAccount(newAccountAddress)
 
 В результате всего этого, владельцом (и администратором) становится новый аккаунт с адресом _newAccountAddress_.
 
+Различные другие ситуаций использования данного функционала можно посмотреть в тестах в соответствующем множестве.
 
 #### Примечание
 
 Данная логика имеет некоторые __риски__, т.к. доверенные лица могут сговориться и сменить владельца без его ведома. 
 
 Возможное компромиссное решение данной проблемы может состоять в исполнении передачи владения __через некоторый промежуток времени__, после инициализации запроса (к примеру, через сутки), что может повысить вероятность обнаружения данной ситуации текущим владельцем.
+
+________
 
 ### Тестирование
 
