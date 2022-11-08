@@ -1,13 +1,13 @@
 ### Smart contract-based wallet
 
-Реализация смарт контракта, [дублирующего](https://www.argent.xyz/blog/wtf-is-account-abstraction/) некоторую логику _EOA аккаунтов (Externally Owned Accounts)_:
+В данном проекте разработан смарт контракт, [дублирующий](https://www.argent.xyz/blog/wtf-is-account-abstraction/) некоторую логику _EOA аккаунтов (Externally Owned Accounts)_:
 - Получение токенов 
 - Отправка токенов
 - Подпись транзакций 
 
-Дополнительно реализован функционал _восстановления (смены владельца)_ с использованием доверенных лиц.
+Дополнительно в контракте реализован функционал _восстановления (смены владельца)_ с использованием доверенных лиц.
 
-В данном проекте подразумеваются токены, соответствующие интерфейсу [IERC20](https://docs.openzeppelin.com/contracts/2.x/api/token/erc20) стандарта [ERC20](https://ethereum.org/en/developers/docs/standards/tokens/erc-20/).
+Подразумеваются, что токены соответствуют интерфейсу [IERC20](https://docs.openzeppelin.com/contracts/2.x/api/token/erc20) стандарта [ERC20](https://ethereum.org/en/developers/docs/standards/tokens/erc-20/).
 
 Подробности концепции _account abstraction_ можно изучить в следующий источниках:
 
@@ -37,7 +37,7 @@
 
 ### Тестирование
 
-В папке _test_ расположены тесты, покрывающие большое количество позитивных и негативных сценариев. При их разработке использовались инструменты _hardhat, waffle, ethers, mocha, solidity-coverage_.
+В папке _test_ расположены тесты, покрывающие большое количество позитивных и негативных сценариев (порядка 50 тестов). При их разработке использовались инструменты _hardhat, waffle, ethers, mocha, solidity-coverage_.
 
 Для эмуляции взаимодействия с токенами _IERC20_ был использован соответствующий [_Mock контракт_](https://ethereum-waffle.readthedocs.io/en/latest/mock-contract.html).
 
