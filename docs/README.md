@@ -204,7 +204,7 @@ Fill fund (only by owner).
 function totalAmount() external view returns (uint256)
 ```
 
-Get amount of all funds (only by owner).
+Get amount of funds available in the contract (only by owner).
 
 ### withdrawAll
 
@@ -220,7 +220,7 @@ Withdraw all funds (only by owner).
 function totalAmountTokens() public view returns (uint256)
 ```
 
-Get amount of funds available in the contract (only by owner).
+Get amount of tokens available in the contract (only by owner).
 
 ### withdrawAllTokens
 
