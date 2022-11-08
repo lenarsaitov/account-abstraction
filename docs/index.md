@@ -5,7 +5,7 @@
 ### fillAmount
 
 ```solidity
-function fillAmount() external payable
+function fillAmount() external onlyOwner payable
 ```
 
 Fill amount
@@ -13,7 +13,7 @@ Fill amount
 ### withdrawAll
 
 ```solidity
-function withdrawAll() external
+function withdrawAll() external onlyOwner
 ```
 
 Withdraw amount
@@ -21,7 +21,7 @@ Withdraw amount
 ### totalAmount
 
 ```solidity
-function totalAmount() external view returns (uint256)
+function totalAmount() external view onlyOwner returns(uint256)
 ```
 
 Returns total amount of contract
@@ -74,7 +74,7 @@ Returns count of trusted accounts
 ### isVoted
 
 ```solidity
-function isVoted(address _voter) external view returns (bool)
+function isVoted(address _voter) external onlyRole(TRUSTED_ACCOUNT_ROLE) view returns (bool)
 ```
 
 Returns bool: understand whether he voted or not
@@ -82,7 +82,7 @@ Returns bool: understand whether he voted or not
 ### isVoteStarted
 
 ```solidity
-function isVoteStarted() external view returns (bool)
+function isVoteStarted() external onlyRole(TRUSTED_ACCOUNT_ROLE) view returns (bool)
 ```
 
 Returns bool: voting started or not
@@ -96,7 +96,7 @@ function _resetVotes() private
 ### startRecoveryAccount
 
 ```solidity
-function startRecoveryAccount(address _candidate) external
+function startRecoveryAccount(address _candidate) external onlyRole(TRUSTED_ACCOUNT_ROLE)
 ```
 
 Start voting to recovery account
@@ -104,7 +104,7 @@ Start voting to recovery account
 ### resetAnyRecoveryAccount
 
 ```solidity
-function resetAnyRecoveryAccount() external
+function resetAnyRecoveryAccount() external onlyRole(TRUSTED_ACCOUNT_ROLE)
 ```
 
 End voting to recovery account
@@ -112,7 +112,7 @@ End voting to recovery account
 ### voteRecoveryAccount
 
 ```solidity
-function voteRecoveryAccount(address _candidate) external
+function voteRecoveryAccount(address _candidate) external onlyRole(TRUSTED_ACCOUNT_ROLE)
 ```
 
 Add vote to recovery account
@@ -128,7 +128,7 @@ Modifier for revoke (see AccessControl docs) and delete account from trusted acc
 ### renounceRole
 
 ```solidity
-function renounceRole(bytes32 _role, address _accountAddress) public
+function renounceRole(bytes32 _role, address _accountAddress) public onlyRole(TRUSTED_ACCOUNT_ROLE) toRevokeTrustedRoleAccount(_role, _accountAddress)
 ```
 
 Renounce some role from account (only by self account)
@@ -136,7 +136,7 @@ Renounce some role from account (only by self account)
 ### revokeRole
 
 ```solidity
-function revokeRole(bytes32 _role, address _accountAddress) public
+function revokeRole(bytes32 _role, address _accountAddress) public onlyRole(DEFAULT_ADMIN_ROLE) toRevokeTrustedRoleAccount(_role, _accountAddress)
 ```
 
 Revoke some role from account (only by admin)
@@ -144,7 +144,7 @@ Revoke some role from account (only by admin)
 ### grantRole
 
 ```solidity
-function grantRole(bytes32 _role, address _accountAddress) public
+function grantRole(bytes32 _role, address _accountAddress) public onlyRole(DEFAULT_ADMIN_ROLE)
 ```
 
 Grant some role to account (only by admin)
@@ -166,7 +166,7 @@ constructor(contract IERC20 _token) public
 ### countTokens
 
 ```solidity
-function countTokens() public view returns (uint256)
+function countTokens() public view returns (uint256) onlyOwner
 ```
 
 Returns count of tokens in this smart-contract
@@ -174,7 +174,7 @@ Returns count of tokens in this smart-contract
 ### getTokens
 
 ```solidity
-function getTokens(uint256 _amount) external
+function getTokens(uint256 _amount) external onlyOwner
 ```
 
 Get tokens
@@ -182,7 +182,7 @@ Get tokens
 ### sendTokens
 
 ```solidity
-function sendTokens(address recipient, uint256 _amount) external
+function sendTokens(address recipient, uint256 _amount) external onlyOwner
 ```
 
 Send tokens
@@ -190,7 +190,7 @@ Send tokens
 ### approveDebitTokens
 
 ```solidity
-function approveDebitTokens(address spender, uint256 _amount) external
+function approveDebitTokens(address spender, uint256 _amount) external onlyOwner
 ```
 
 Approve debit transaction
