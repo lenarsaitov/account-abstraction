@@ -109,7 +109,7 @@ describe("EOAccount", function (){
       })
     })
 
-    describe("Recover voting", function(){
+    describe("Recover ownership", function(){
       it("Full recovery correct voting by trusted accounts", async function(){
         await myEOAccountsContract.connect(accounts[1]).initRecovery(accounts[10].address)
     
@@ -161,23 +161,23 @@ describe("EOAccount", function (){
         await expect(myEOAccountsContract.connect(accounts[1]).voteRecovery(accounts[10].address)).to.be.reverted
       })
       
-      it("Dont voting recovery (by trusted account) when vote to other candidate than was when start recovery", async function(){
+      it("Dont voting recovery (by trusted account) when vote to other candidate than was when init recovery", async function(){
         await myEOAccountsContract.connect(accounts[1]).initRecovery(accounts[10].address)    
         await myEOAccountsContract.connect(accounts[1]).voteRecovery(accounts[10].address)
 
         await expect(myEOAccountsContract.connect(accounts[2]).voteRecovery(accounts[11].address)).to.be.reverted
       })
 
-      it("Dont start recovery (by trusted account) to candidate with the equal to owner", async function(){
+      it("Dont init recovery (by trusted account) to candidate with the equal to owner", async function(){
         await expect(myEOAccountsContract.connect(accounts[1]).initRecovery(accounts[0].address)).to.be.reverted
       })
 
-      it("Dont voting recovery (by trusted account) when vote to other (admin) candidate than was when start recovery", async function(){
+      it("Dont voting recovery (by trusted account) when vote to other (admin) candidate than was when init recovery", async function(){
         await myEOAccountsContract.connect(accounts[1]).initRecovery(accounts[10].address)    
         await expect(myEOAccountsContract.connect(accounts[2]).voteRecovery(accounts[0].address)).to.be.reverted
       })
 
-      it("Dont start recovery by admin account", async function(){
+      it("Dont init recovery by admin account", async function(){
         await expect(myEOAccountsContract.connect(accounts[0]).initRecovery(accounts[10].address)).to.be.reverted
       })
 
@@ -186,25 +186,25 @@ describe("EOAccount", function (){
         await expect(myEOAccountsContract.connect(accounts[0]).voteRecovery(accounts[10].address)).to.be.reverted
       })
 
-      it("Dont vote recovery when voting doesnt started", async function(){   
+      it("Dont vote recovery when recovery wasnt initialized", async function(){   
         await expect(myEOAccountsContract.connect(accounts[1]).voteRecovery(accounts[10].address)).to.be.reverted
       })
 
-      it("Reset recovery when voting recovery not finished", async function(){
+      it("Reset recovery when recovery not finished", async function(){
         await myEOAccountsContract.connect(accounts[1]).initRecovery(accounts[10].address)
-        expect(await myEOAccountsContract.connect(accounts[1]).isVoteStarted()).to.equal(true)
+        expect(await myEOAccountsContract.connect(accounts[1]).isRecoveryInitialized()).to.equal(true)
         await myEOAccountsContract.connect(accounts[1]).voteRecovery(accounts[10].address)
         await myEOAccountsContract.connect(accounts[2]).resetAnyRecovery()
     
-        expect(await myEOAccountsContract.connect(accounts[1]).isVoteStarted()).to.equal(false)
+        expect(await myEOAccountsContract.connect(accounts[1]).isRecoveryInitialized()).to.equal(false)
         expect(await myEOAccountsContract.hasRole(adminRole, accounts[0].address)).to.equal(true)
         expect(await myEOAccountsContract.hasRole(adminRole, accounts[10].address)).to.equal(false)
       })
 
-      it("Reset recovery when voting recovery not started", async function(){
-        expect(await myEOAccountsContract.connect(accounts[1]).isVoteStarted()).to.equal(false)
+      it("Reset recovery when recovery not initialized", async function(){
+        expect(await myEOAccountsContract.connect(accounts[1]).isRecoveryInitialized()).to.equal(false)
         await myEOAccountsContract.connect(accounts[2]).resetAnyRecovery()
-        expect(await myEOAccountsContract.connect(accounts[1]).isVoteStarted()).to.equal(false)
+        expect(await myEOAccountsContract.connect(accounts[1]).isRecoveryInitialized()).to.equal(false)
 
         expect(await myEOAccountsContract.hasRole(adminRole, accounts[0].address)).to.equal(true)
         expect(await myEOAccountsContract.hasRole(adminRole, accounts[10].address)).to.equal(false)
@@ -218,16 +218,16 @@ describe("EOAccount", function (){
         await expect(myEOAccountsContract.connect(accounts[10]).resetAnyRecovery()).to.be.reverted
       })
 
-      it("Is vote started check by trusted account", async function(){
-        expect(await myEOAccountsContract.connect(accounts[1]).isVoteStarted()).to.equal(false)
+      it("Is recovery initialized check by trusted account", async function(){
+        expect(await myEOAccountsContract.connect(accounts[1]).isRecoveryInitialized()).to.equal(false)
       })
 
-      it("Is vote started dont check by admin account", async function(){
-        await expect(myEOAccountsContract.connect(accounts[0]).isVoteStarted()).to.be.reverted
+      it("Is recovery initialized dont check by admin account", async function(){
+        await expect(myEOAccountsContract.connect(accounts[0]).isRecoveryInitialized()).to.be.reverted
       })
 
-      it("Is vote started dont check by alias account", async function(){
-        await expect(myEOAccountsContract.connect(accounts[10]).isVoteStarted()).to.be.reverted
+      it("Is recovery initialized dont check by alias account", async function(){
+        await expect(myEOAccountsContract.connect(accounts[10]).isRecoveryInitialized()).to.be.reverted
       })
 
     })

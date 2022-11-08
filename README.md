@@ -17,6 +17,7 @@
 
 [Why EOA Wallets are a Threat to the Future of Blockchain](https://www.argent.xyz/blog/self-custody-mass-adoption/)
 
+[Implementing account abstraction as part of eth1.x](https://ethereum-magicians.org/t/implementing-account-abstraction-as-part-of-eth1-x/4020)
 ________
 
 ### Структура проекта
@@ -37,6 +38,7 @@ ________
 
 [Solidity Style Guide (Part II)](https://medium.com/@ivanlieskov/solidity-style-guide-part-ii-23ac3b10fdfb)
 
+Описание __API__ контракта можно посмотреть в документации, расположенной папке __docs__
 ________
 ### Функционал смены владельца доверенными лицами
 
@@ -61,25 +63,25 @@ grantRole(TRUSTED_ACCOUNT_ROLE, accountAddress)
 revokeRole(TRUSTED_ACCOUNT_ROLE, accountAddress)
 ```
 
-Сама смена владельца реализована в два этапа (см. ниже).
+Сама смена владельца реализована в __два этапа__ (см. ниже).
 
 #### Смена владельца
 
 Первым делом подразумевается __инициализация__ восстановления, посредством выполнения любым из доверенных лиц следующей функции:
 
 ```
-startRecoveryAccount(newAccountAddress)
+initRecovery(newAccountAddress)
 ```
 
 Далее __каждое__ доверенное лицо должно выполнить следующий запрос:
 
 ```
-voteRecoveryAccount(newAccountAddress)
+voteRecovery(newAccountAddress)
 ```
 
 В результате всего этого, владельцом (и администратором) становится новый аккаунт с адресом _newAccountAddress_.
 
-Различные другие ситуаций использования данного функционала можно посмотреть в тестах в соответствующем множестве.
+Различные другие кейсы можно посмотреть в соответствующих тестах.
 
 #### Примечание
 
