@@ -34,20 +34,33 @@ describe("EOAccount", function (){
 
   describe("Main logic", function(){
     describe("Balance", function(){
-      it("Fill amount is correct", async function(){
+      it("Fill amount by owner", async function(){
         await myEOAccountsContract.fillAmount({value: amount})
         expect(await myEOAccountsContract.totalAmount()).to.equal(amount)
       })
   
-      it("Fill amount without amount", async function(){
+      it("Fill amount without amount by owner", async function(){
         await myEOAccountsContract.fillAmount()
         expect(await myEOAccountsContract.totalAmount()).to.equal(0)
       })
 
-      it("Withdraw amount is correct", async function(){
+      it("Dont fill amount by other", async function(){
+        await expect(myEOAccountsContract.connect(accounts[1]).fillAmount({value: amount})).to.be.reverted
+      })
+
+      it("Withdraw amount by owner", async function(){
         await myEOAccountsContract.fillAmount({value: amount})
         expect(await myEOAccountsContract.withdrawAll())
         expect(await myEOAccountsContract.totalAmount()).to.equal(0)
+      })
+
+      it("Dont withdraw amount by other", async function(){
+        await myEOAccountsContract.fillAmount({value: amount})
+        await expect(myEOAccountsContract.connect(accounts[1]).withdrawAll()).to.be.reverted
+      })
+
+      it("Dont get total amount by other", async function(){
+        await expect(myEOAccountsContract.connect(accounts[1]).totalAmount()).to.be.reverted
       })
     })
 
@@ -63,8 +76,12 @@ describe("EOAccount", function (){
         await myEOAccountsContract.getTokens(amount)
       })
 
+      it("Dont get 0 tokens by owner", async function(){
+        await expect(myEOAccountsContract.getTokens(0)).to.be.reverted
+      })
+
       it("Dont get tokens when by other", async function(){
-        await expect(myEOAccountsContract.getTokens(amount)).to.be.reverted
+        await expect(myEOAccountsContract.connect(accounts[2]).getTokens(amount)).to.be.reverted
       })
 
       it("Send tokens by owner", async function(){
@@ -73,8 +90,12 @@ describe("EOAccount", function (){
         await myEOAccountsContract.sendTokens(accounts[1].address, amount)
       })
 
+      it("Dont send 0 tokens by owner", async function(){
+        await expect(myEOAccountsContract.sendTokens(accounts[1].address, 0)).to.be.reverted
+      })
+
       it("Dont send tokens when by other", async function(){
-        await expect(myEOAccountsContract.sendTokens(accounts[1].address, amount)).to.be.reverted
+        await expect(myEOAccountsContract.connect(accounts[2]).sendTokens(accounts[1].address, amount)).to.be.reverted
       })
 
       it("Approve debbiting tokens by owner", async function(){
@@ -244,18 +265,29 @@ describe("EOAccount", function (){
     })
 
     describe("Grant role", function(){
-      it("Grant role by admin", async function(){
+      it("Grant trusted role by admin", async function(){
         await myEOAccountsContract.grantRole(trustedRole, accounts[5].address)
-
         expect(await myEOAccountsContract.hasRole(trustedRole, accounts[5].address)).to.equal(true)
         expect(await myEOAccountsContract.getCountTrustedAccounts()).to.equal(4)
       })
     
-      it("Dont grant role by trusted", async function(){
+      it("Grant admin role by admin", async function(){
+        expect(await myEOAccountsContract.hasRole(adminRole, accounts[5].address)).to.equal(false)
+        await myEOAccountsContract.grantRole(adminRole, accounts[5].address)
+        expect(await myEOAccountsContract.hasRole(adminRole, accounts[5].address)).to.equal(true)
+      })
+
+      it("Dont grant trusted role by admin, becouse double granting", async function(){
+        await myEOAccountsContract.grantRole(trustedRole, accounts[5].address)
+        expect(await myEOAccountsContract.hasRole(trustedRole, accounts[5].address)).to.equal(true)
+        await expect(myEOAccountsContract.grantRole(trustedRole, accounts[5].address)).to.be.reverted
+      })
+
+      it("Dont grant trusted role by trusted", async function(){
         await expect(myEOAccountsContract.connect(accounts[2]).grantRole(trustedRole, accounts[5].address)).to.be.reverted
       })
     
-      it("Dont grant role by alies", async function(){
+      it("Dont grant trusted role by alies", async function(){
         await expect(myEOAccountsContract.connect(accounts[7]).grantRole(trustedRole, accounts[5].address)).to.be.reverted
       })  
     })
@@ -285,10 +317,20 @@ describe("EOAccount", function (){
         expect(await myEOAccountsContract.getCountTrustedAccounts()).to.equal(2)
       })
     
+      it("Renounce not exists role by trusted account", async function(){
+        expect(await myEOAccountsContract.hasRole(adminRole, accounts[1].address)).to.equal(false)
+        myEOAccountsContract.connect(accounts[1]).renounceRole(adminRole, accounts[1].address)
+        expect(await myEOAccountsContract.hasRole(adminRole, accounts[1].address)).to.equal(false)
+      })
+
       it("Dont renounce role by admin", async function(){
         await expect(myEOAccountsContract.renounceRole(trustedRole, accounts[2].address)).to.be.reverted
       })
     
+      it("Dont renounce trusted role by other trusted account", async function(){
+        await expect(myEOAccountsContract.connect(accounts[1]).renounceRole(trustedRole, accounts[2].address)).to.be.reverted
+      })
+
       it("Dont renounce role by alias account", async function(){
         await expect(myEOAccountsContract.connect(accounts[6]).renounceRole(trustedRole, accounts[2].address)).to.be.reverted
       })
