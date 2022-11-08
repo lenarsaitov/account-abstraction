@@ -2,14 +2,14 @@
 
 pragma solidity^0.8.17;
 
-import "@openzeppelin/contracts/access/AccessControl.sol";
+import "./AccessControl.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 /// @title Account recovery implementation
 /// @author Lenar Saitov
 contract AccountRecovery is Ownable, AccessControl{
-    bytes32 public constant TRUSTED_ACCOUNT_ROLE = keccak256("TRUSTED_ACCOUNT_ROLE");
+    bytes32 private constant TRUSTED_ACCOUNT_ROLE = keccak256("TRUSTED_ACCOUNT_ROLE");
     address[] private trustedAccounts;
 
     constructor(){
@@ -101,56 +101,52 @@ contract AccountRecovery is Ownable, AccessControl{
         }
     }
 
-    // Modifier for revoke (see AccessControl docs) trusted role and delete account from trusted accounts set.
-    modifier toRevokeTrustedRoleAccount(bytes32 _role, address _accountAddress){
-        _;
-        _revokeRole(_role, _accountAddress);
-        if (_role == TRUSTED_ACCOUNT_ROLE){
-            for (uint256 i = 0; i < trustedAccounts.length; ++i) {
-                if (_accountAddress == trustedAccounts[i]){
-                    recovery.voteUnique[_accountAddress] = false;
-                    trustedAccounts[i] = trustedAccounts[trustedAccounts.length-1];
-                    trustedAccounts.pop();
-
-                    break;
-                }
-            }
-        }
-    }
-
-
     /**
-     * Renounce role by account self (permission only for self).
-     * @param _role the role of account
-     * @param _accountAddress the address of account (should be only == msg.sender)
-     */
-    function renounceRole(bytes32 _role, address _accountAddress) public override onlyRole(TRUSTED_ACCOUNT_ROLE) toRevokeTrustedRoleAccount(_role, _accountAddress){
-        require(_accountAddress == _msgSender(), "AccessControl: can only renounce roles for self");
-    }
-
-    /**
-     * Revoke role (permission only for admin)
-     * @param _role the role of account
+     * Grant trusted role (permission only for admin).
      * @param _accountAddress the address of account
      */
-    function revokeRole(bytes32 _role, address _accountAddress) public override onlyRole(DEFAULT_ADMIN_ROLE) toRevokeTrustedRoleAccount(_role, _accountAddress){
-    }
+    function grantTrustedRole(address _accountAddress) external onlyRole(DEFAULT_ADMIN_ROLE){
+        _grantRole(TRUSTED_ACCOUNT_ROLE, _accountAddress);
 
-    /**
-     * Grant role (permission only for admin).
-     * @param _role the role of account
-     * @param _accountAddress the address of account
-     */
-    function grantRole(bytes32 _role, address _accountAddress) public override onlyRole(DEFAULT_ADMIN_ROLE){
-        _grantRole(_role, _accountAddress);
-
-        if (_role == TRUSTED_ACCOUNT_ROLE){
-            for (uint256 i = 0; i < trustedAccounts.length; ++i) {
-                require(_accountAddress != trustedAccounts[i], "This account address is already trusted account role");
-            }
+        for (uint256 i = 0; i < trustedAccounts.length; ++i) {
+            require(_accountAddress != trustedAccounts[i], "This account address is already trusted account role");
         }
 
         trustedAccounts.push(_accountAddress);
+    }
+
+    /**
+     * Revoke trusted role (permission only for admin)
+     * @param _accountAddress the address of account
+     */
+    function revokeTrustedRole(address _accountAddress) external onlyRole(DEFAULT_ADMIN_ROLE){
+        _revokeRole(TRUSTED_ACCOUNT_ROLE, _accountAddress);
+
+        for (uint256 i = 0; i < trustedAccounts.length; ++i) {
+            if (_accountAddress == trustedAccounts[i]){
+                recovery.voteUnique[_accountAddress] = false;
+                trustedAccounts[i] = trustedAccounts[trustedAccounts.length-1];
+                trustedAccounts.pop();
+
+                break;
+            }
+        }
+    }
+
+    /**
+     * @param _accountAddress the address of account
+     * @return Returns `true` if `account` has been granted `trusted role`.
+     */
+    function hasTrustedRole(address _accountAddress) external view returns (bool){
+        return hasRole(TRUSTED_ACCOUNT_ROLE, _accountAddress);
+    }
+
+    /**
+     * @param _accountAddress the address of account
+     * @return Returns `true` if `account` has been granted `admin role`.
+     */
+    function hasAdminRole(address _accountAddress) external view returns (bool){
+        return hasRole(DEFAULT_ADMIN_ROLE, _accountAddress);
     }
 }
 
@@ -164,7 +160,6 @@ contract EOAccount is AccountRecovery{
     constructor (IERC20 _token) {
         token = _token;
     }
-
 
     /**
      * Fill fund (only by owner).

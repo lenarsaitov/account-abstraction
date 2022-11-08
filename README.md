@@ -26,7 +26,6 @@ ________
 
 Использовались верифицированные контракты _OpenZeppelin_:
 
-- _access/AccessControl.sol_
 - _access/Ownable.sol_
 - _token/ERC20/ERC20.sol_
 
@@ -42,7 +41,7 @@ ________
 ________
 ### Функционал смены владельца доверенными лицами
 
-Данный функционал был реализован с использованием определенных ___модификаторов___ (см.  _onlyOwner, onlyRole, toRevokeTrustedRoleAccount_ и т.д.).
+Данный функционал был реализован с использованием определенных ___модификаторов___ (см.  _onlyOwner и onlyRole).
 
 Для аккаунтов введены две роли:
 
@@ -54,13 +53,13 @@ ________
 Доверенное лицо __добавляется__ администратором посредством выполнения следующей функции:
 
 ```solidity
-grantRole(TRUSTED_ACCOUNT_ROLE, accountAddress)
+grantTrustedRole(accountAddress)
 ```
 
 Администратор также может __убрать__ аккаунт из списка доверенных при помощи следующего запроса:
 
 ```solidity
-revokeRole(TRUSTED_ACCOUNT_ROLE, accountAddress)
+revokeTrustedRole(accountAddress)
 ```
 
 Сама смена владельца реализована в __два этапа__ (см. ниже).

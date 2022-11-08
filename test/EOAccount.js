@@ -8,8 +8,6 @@ const IERC20 = require('../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.
 let accounts
 let EOAccountsContract
 let myEOAccountsContract
-let adminRole
-let trustedRole
 let amount = 1000
 let mockERC20
 
@@ -23,17 +21,15 @@ describe("EOAccount", function (){
     myEOAccountsContract = await EOAccountsContract.deploy(mockERC20.address)
 
     await myEOAccountsContract.deployed()
-    adminRole = await myEOAccountsContract.DEFAULT_ADMIN_ROLE()
-    trustedRole = await myEOAccountsContract.TRUSTED_ACCOUNT_ROLE()
 
     expect(await myEOAccountsContract.owner()).to.equal(accounts[0].address)
-    await myEOAccountsContract.grantRole(trustedRole, accounts[1].address)
-    await myEOAccountsContract.grantRole(trustedRole, accounts[2].address)
-    await myEOAccountsContract.grantRole(trustedRole, accounts[3].address)
+    await myEOAccountsContract.grantTrustedRole(accounts[1].address)
+    await myEOAccountsContract.grantTrustedRole(accounts[2].address)
+    await myEOAccountsContract.grantTrustedRole(accounts[3].address)
   })
 
   describe("Main logic", function(){
-    describe("Balance", function(){
+    describe("Fund balance", function(){
       it("Fill amount by owner", async function(){
         await myEOAccountsContract.fillFund({value: amount})
         expect(await myEOAccountsContract.totalAmount()).to.equal(amount)
@@ -124,8 +120,8 @@ describe("EOAccount", function (){
         await myEOAccountsContract.connect(accounts[2]).voteRecovery(accounts[10].address)
         await myEOAccountsContract.connect(accounts[3]).voteRecovery(accounts[10].address)
 
-        expect(await myEOAccountsContract.hasRole(adminRole, accounts[0].address)).to.equal(false)
-        expect(await myEOAccountsContract.hasRole(adminRole, accounts[10].address)).to.equal(true)
+        expect(await myEOAccountsContract.hasAdminRole(accounts[0].address)).to.equal(false)
+        expect(await myEOAccountsContract.hasAdminRole(accounts[10].address)).to.equal(true)
 
         expect(await myEOAccountsContract.owner()).to.equal(accounts[10].address)
       })
@@ -136,8 +132,8 @@ describe("EOAccount", function (){
         await myEOAccountsContract.connect(accounts[1]).voteRecovery(accounts[10].address)
         await myEOAccountsContract.connect(accounts[2]).voteRecovery(accounts[10].address)
     
-        expect(await myEOAccountsContract.hasRole(adminRole, accounts[0].address)).to.equal(true)
-        expect(await myEOAccountsContract.hasRole(adminRole, accounts[10].address)).to.equal(false)
+        expect(await myEOAccountsContract.hasAdminRole(accounts[0].address)).to.equal(true)
+        expect(await myEOAccountsContract.hasAdminRole(accounts[10].address)).to.equal(false)
       })
 
       it("See voted trusted account by trusted account", async function(){
@@ -204,8 +200,8 @@ describe("EOAccount", function (){
         await myEOAccountsContract.connect(accounts[2]).resetAnyRecovery()
     
         expect(await myEOAccountsContract.connect(accounts[1]).isRecoveryInitialized()).to.equal(false)
-        expect(await myEOAccountsContract.hasRole(adminRole, accounts[0].address)).to.equal(true)
-        expect(await myEOAccountsContract.hasRole(adminRole, accounts[10].address)).to.equal(false)
+        expect(await myEOAccountsContract.hasAdminRole(accounts[0].address)).to.equal(true)
+        expect(await myEOAccountsContract.hasAdminRole(accounts[10].address)).to.equal(false)
       })
 
       it("Reset recovery when recovery not initialized", async function(){
@@ -213,8 +209,8 @@ describe("EOAccount", function (){
         await myEOAccountsContract.connect(accounts[2]).resetAnyRecovery()
         expect(await myEOAccountsContract.connect(accounts[1]).isRecoveryInitialized()).to.equal(false)
 
-        expect(await myEOAccountsContract.hasRole(adminRole, accounts[0].address)).to.equal(true)
-        expect(await myEOAccountsContract.hasRole(adminRole, accounts[10].address)).to.equal(false)
+        expect(await myEOAccountsContract.hasAdminRole(accounts[0].address)).to.equal(true)
+        expect(await myEOAccountsContract.hasAdminRole(accounts[10].address)).to.equal(false)
       })
 
       it("Reset recovery dont when admin request", async function(){
@@ -243,17 +239,17 @@ describe("EOAccount", function (){
   describe("Standart AccessControl", function(){
     describe("Accounts have correct roles", function(){
       it("Accounts have right role", async function(){
-        expect(await myEOAccountsContract.hasRole(adminRole, accounts[0].address)).to.equal(true)
-        expect(await myEOAccountsContract.hasRole(trustedRole, accounts[1].address)).to.equal(true)
-        expect(await myEOAccountsContract.hasRole(trustedRole, accounts[2].address)).to.equal(true)
-        expect(await myEOAccountsContract.hasRole(trustedRole, accounts[3].address)).to.equal(true)
+        expect(await myEOAccountsContract.hasAdminRole(accounts[0].address)).to.equal(true)
+        expect(await myEOAccountsContract.hasTrustedRole(accounts[1].address)).to.equal(true)
+        expect(await myEOAccountsContract.hasTrustedRole(accounts[2].address)).to.equal(true)
+        expect(await myEOAccountsContract.hasTrustedRole(accounts[3].address)).to.equal(true)
       })
     
       it("Accounts dont have wrong role", async function(){
-        expect(await myEOAccountsContract.hasRole(trustedRole, accounts[0].address)).to.equal(false)
-        expect(await myEOAccountsContract.hasRole(adminRole, accounts[1].address)).to.equal(false)
-        expect(await myEOAccountsContract.hasRole(adminRole, accounts[2].address)).to.equal(false)
-        expect(await myEOAccountsContract.hasRole(adminRole, accounts[3].address)).to.equal(false)
+        expect(await myEOAccountsContract.hasTrustedRole(accounts[0].address)).to.equal(false)
+        expect(await myEOAccountsContract.hasAdminRole(accounts[1].address)).to.equal(false)
+        expect(await myEOAccountsContract.hasAdminRole(accounts[2].address)).to.equal(false)
+        expect(await myEOAccountsContract.hasAdminRole(accounts[3].address)).to.equal(false)
       })  
     })
   
@@ -273,73 +269,40 @@ describe("EOAccount", function (){
 
     describe("Grant role", function(){
       it("Grant trusted role by admin", async function(){
-        await myEOAccountsContract.grantRole(trustedRole, accounts[5].address)
-        expect(await myEOAccountsContract.hasRole(trustedRole, accounts[5].address)).to.equal(true)
+        await myEOAccountsContract.grantTrustedRole(accounts[5].address)
+        expect(await myEOAccountsContract.hasTrustedRole(accounts[5].address)).to.equal(true)
         expect(await myEOAccountsContract.getCountTrustedAccounts()).to.equal(4)
-      })
-    
-      it("Grant admin role by admin", async function(){
-        expect(await myEOAccountsContract.hasRole(adminRole, accounts[5].address)).to.equal(false)
-        await myEOAccountsContract.grantRole(adminRole, accounts[5].address)
-        expect(await myEOAccountsContract.hasRole(adminRole, accounts[5].address)).to.equal(true)
       })
 
       it("Dont grant trusted role by admin, becouse double granting", async function(){
-        await myEOAccountsContract.grantRole(trustedRole, accounts[5].address)
-        expect(await myEOAccountsContract.hasRole(trustedRole, accounts[5].address)).to.equal(true)
-        await expect(myEOAccountsContract.grantRole(trustedRole, accounts[5].address)).to.be.reverted
+        await myEOAccountsContract.grantTrustedRole(accounts[5].address)
+        expect(await myEOAccountsContract.hasTrustedRole(accounts[5].address)).to.equal(true)
+        await expect(myEOAccountsContract.grantTrustedRole(accounts[5].address)).to.be.reverted
       })
 
       it("Dont grant trusted role by trusted", async function(){
-        await expect(myEOAccountsContract.connect(accounts[2]).grantRole(trustedRole, accounts[5].address)).to.be.reverted
+        await expect(myEOAccountsContract.connect(accounts[2]).grantTrustedRole(accounts[5].address)).to.be.reverted
       })
     
       it("Dont grant trusted role by alies", async function(){
-        await expect(myEOAccountsContract.connect(accounts[7]).grantRole(trustedRole, accounts[5].address)).to.be.reverted
+        await expect(myEOAccountsContract.connect(accounts[7]).grantTrustedRole(accounts[5].address)).to.be.reverted
       })  
     })
   
     describe("Revoke role", function(){
       it("Revoke trusted account role by admin", async function(){
-        await myEOAccountsContract.revokeRole(trustedRole, accounts[1].address)
+        await myEOAccountsContract.revokeTrustedRole(accounts[1].address)
 
-        expect(await myEOAccountsContract.hasRole(trustedRole, accounts[1].address)).to.equal(false)
+        expect(await myEOAccountsContract.hasTrustedRole(accounts[1].address)).to.equal(false)
         expect(await myEOAccountsContract.getCountTrustedAccounts()).to.equal(2)
       })
   
       it("Dont revoke trusted account role by this trusted", async function(){
-        await expect(myEOAccountsContract.connect(accounts[1]).revokeRole(trustedRole, accounts[1].address)).to.be.reverted
+        await expect(myEOAccountsContract.connect(accounts[1]).revokeTrustedRole(accounts[1].address)).to.be.reverted
       })
   
       it("Dont revoke trusted account role by other trusted", async function(){
-        await expect(myEOAccountsContract.connect(accounts[2]).revokeRole(trustedRole, accounts[1].address)).to.be.reverted
-      })
-    })
-  
-    describe("Renounce role", function(){
-      it("Renounce role by trusted account", async function(){
-        await myEOAccountsContract.connect(accounts[1]).renounceRole(trustedRole, accounts[1].address)
-
-        expect(await myEOAccountsContract.hasRole(trustedRole, accounts[1].address)).to.equal(false)
-        expect(await myEOAccountsContract.getCountTrustedAccounts()).to.equal(2)
-      })
-    
-      it("Renounce not exists role by trusted account", async function(){
-        expect(await myEOAccountsContract.hasRole(adminRole, accounts[1].address)).to.equal(false)
-        myEOAccountsContract.connect(accounts[1]).renounceRole(adminRole, accounts[1].address)
-        expect(await myEOAccountsContract.hasRole(adminRole, accounts[1].address)).to.equal(false)
-      })
-
-      it("Dont renounce role by admin", async function(){
-        await expect(myEOAccountsContract.renounceRole(trustedRole, accounts[2].address)).to.be.reverted
-      })
-    
-      it("Dont renounce trusted role by other trusted account", async function(){
-        await expect(myEOAccountsContract.connect(accounts[1]).renounceRole(trustedRole, accounts[2].address)).to.be.reverted
-      })
-
-      it("Dont renounce role by alias account", async function(){
-        await expect(myEOAccountsContract.connect(accounts[6]).renounceRole(trustedRole, accounts[2].address)).to.be.reverted
+        await expect(myEOAccountsContract.connect(accounts[2]).revokeTrustedRole(accounts[1].address)).to.be.reverted
       })
     })
   })

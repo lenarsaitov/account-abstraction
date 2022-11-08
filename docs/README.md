@@ -1,41 +1,6 @@
-# Solidity API
+# Contract API
 
 ## AccountRecovery
-
-### TRUSTED_ACCOUNT_ROLE
-
-```solidity
-bytes32 TRUSTED_ACCOUNT_ROLE
-```
-
-### trustedAccounts
-
-```solidity
-address[] trustedAccounts
-```
-
-### constructor
-
-```solidity
-constructor() public
-```
-
-### Recovery
-
-```solidity
-struct Recovery {
-  bool isActual;
-  address candidate;
-  uint256 countVotesFor;
-  mapping(address => bool) voteUnique;
-}
-```
-
-### recovery
-
-```solidity
-struct AccountRecovery.Recovery recovery
-```
 
 ### getCountTrustedAccounts
 
@@ -125,56 +90,69 @@ Add agreement to transfer of ownership (only for trusted account). Also transfer
 | ---- | ---- | ----------- |
 | _candidate | address | the address of new assumed account (new assumed owner wallets) |
 
-### toRevokeTrustedRoleAccount
+### grantTrustedRole
 
 ```solidity
-modifier toRevokeTrustedRoleAccount(bytes32 _role, address _accountAddress)
+function grantTrustedRole(address _accountAddress) external
 ```
 
-### renounceRole
-
-```solidity
-function renounceRole(bytes32 _role, address _accountAddress) public
-```
-
-Renounce role by account self (permission only for self).
+Grant trusted role (permission only for admin).
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _role | bytes32 | the role of account |
-| _accountAddress | address | the address of account (should be only == msg.sender) |
-
-### revokeRole
-
-```solidity
-function revokeRole(bytes32 _role, address _accountAddress) public
-```
-
-Revoke role (permission only for admin)
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _role | bytes32 | the role of account |
 | _accountAddress | address | the address of account |
 
-### grantRole
+### revokeTrustedRole
 
 ```solidity
-function grantRole(bytes32 _role, address _accountAddress) public
+function revokeTrustedRole(address _accountAddress) external
 ```
 
-Grant role (permission only for admin).
+Revoke trusted role (permission only for admin)
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _role | bytes32 | the role of account |
 | _accountAddress | address | the address of account |
+
+### hasTrustedRole
+
+```solidity
+function hasTrustedRole(address _accountAddress) external view returns (bool)
+```
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _accountAddress | address | the address of account |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | bool | Returns `true` if `account` has been granted `trusted role`. |
+
+### hasAdminRole
+
+```solidity
+function hasAdminRole(address _accountAddress) external view returns (bool)
+```
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _accountAddress | address | the address of account |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | bool | Returns `true` if `account` has been granted `admin role`. |
 
 ## EOAccount
 
