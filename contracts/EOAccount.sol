@@ -26,6 +26,11 @@ contract AccountRecovery is Ownable, AccessControl{
 
     Recovery private recovery;
 
+    modifier notToOwner(address _accountAddress){
+        require(this.owner() != _accountAddress, "Address cant be equal to address of owner (account with admin role)");
+        _;
+    }
+
     /**
      * @return count of trusted accounts.
      */
@@ -62,8 +67,7 @@ contract AccountRecovery is Ownable, AccessControl{
      * Execute init of recovery of ownership of the wallet (transfer of ownership), only for trusted account.
      * @param _candidate the address of new assumed account (new assumed owner wallets)
      */
-    function initRecovery(address _candidate) external onlyRole(TRUSTED_ACCOUNT_ROLE) {
-        require(this.owner() != _candidate, "There is the same address");
+    function initRecovery(address _candidate) external onlyRole(TRUSTED_ACCOUNT_ROLE) notToOwner(_candidate){
         _resetVotes();
 
         recovery.isActual = true;
@@ -84,7 +88,7 @@ contract AccountRecovery is Ownable, AccessControl{
      * Add agreement to transfer of ownership (only for trusted account). Also transfer ownership if all trusted accounts taken agree and finalize recovery proccess.
      * @param _candidate the address of new assumed account (new assumed owner wallets)
      */
-    function voteRecovery(address _candidate) external onlyRole(TRUSTED_ACCOUNT_ROLE) {
+    function voteRecovery(address _candidate) external onlyRole(TRUSTED_ACCOUNT_ROLE) notToOwner(_candidate){
         require(recovery.isActual, "Recovery was not inited");
         require(!recovery.voteUnique[msg.sender], "You already voted");
         require(_candidate == recovery.candidate, "There is not actual candidate for recover, you can reset recovery and init new");
@@ -105,9 +109,7 @@ contract AccountRecovery is Ownable, AccessControl{
      * Grant trusted role (permission only for admin).
      * @param _accountAddress the address of account
      */
-    function grantTrustedRole(address _accountAddress) external onlyRole(DEFAULT_ADMIN_ROLE){
-        require(msg.sender != _accountAddress, "Administrator cannot have trusted role");
-
+    function grantTrustedRole(address _accountAddress) external onlyRole(DEFAULT_ADMIN_ROLE) notToOwner(_accountAddress){
         for (uint256 i = 0; i < trustedAccounts.length; ++i) {
             require(_accountAddress != trustedAccounts[i], "This account address is already trusted account role");
         }
@@ -121,7 +123,7 @@ contract AccountRecovery is Ownable, AccessControl{
      * Revoke trusted role (permission only for admin)
      * @param _accountAddress the address of account
      */
-    function revokeTrustedRole(address _accountAddress) external onlyRole(DEFAULT_ADMIN_ROLE){
+    function revokeTrustedRole(address _accountAddress) external onlyRole(DEFAULT_ADMIN_ROLE) notToOwner(_accountAddress){
         _revokeRole(TRUSTED_ACCOUNT_ROLE, _accountAddress);
 
         for (uint256 i = 0; i < trustedAccounts.length; ++i) {
