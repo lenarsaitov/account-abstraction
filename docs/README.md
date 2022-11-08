@@ -198,6 +198,14 @@ function fillFund() external payable
 
 Fill fund (only by owner).
 
+### totalAmount
+
+```solidity
+function totalAmount() external view returns (uint256)
+```
+
+Get amount of all funds (only by owner).
+
 ### withdrawAll
 
 ```solidity
@@ -206,21 +214,27 @@ function withdrawAll() external
 
 Withdraw all funds (only by owner).
 
-### totalAmount
+### totalAmountTokens
 
 ```solidity
-function totalAmount() external view returns (uint256)
+function totalAmountTokens() public view returns (uint256)
 ```
 
-Withdraw all funds (only by owner).
+Get amount of funds available in the contract (only by owner).
 
-### countTokens
+### withdrawAllTokens
 
 ```solidity
-function countTokens() public view returns (uint256)
+function withdrawAllTokens() external
 ```
 
-Get count of tokens (only by owner).
+Withdraw all tokens from contract (only by owner).
+
+### enoughTokens
+
+```solidity
+modifier enoughTokens(uint256 _amount)
+```
 
 ### getTokens
 
@@ -236,19 +250,13 @@ Get tokens (only by owner).
 | ---- | ---- | ----------- |
 | _amount | uint256 | the amount of tokens |
 
-### enoughTokens
-
-```solidity
-modifier enoughTokens(uint256 _amount)
-```
-
 ### sendTokens
 
 ```solidity
 function sendTokens(address _recipient, uint256 _amount) external
 ```
 
-Get tokens (only by owner).
+Send tokens (only by owner).
 
 #### Parameters
 

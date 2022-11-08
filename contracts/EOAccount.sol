@@ -173,6 +173,13 @@ contract EOAccount is AccountRecovery{
     }
 
     /**
+     * Get amount of all funds (only by owner).
+     */
+    function totalAmount() external view onlyOwner returns(uint256){
+        return address(this).balance;
+    }
+
+    /**
      * Withdraw all funds (only by owner).
      */
     function withdrawAll() external onlyOwner{
@@ -180,44 +187,41 @@ contract EOAccount is AccountRecovery{
     }
 
     /**
-     * Withdraw all funds (only by owner).
+     * Get amount of funds available in the contract (only by owner).
      */
-    function totalAmount() external view onlyOwner returns(uint256){
-        return address(this).balance;
+    function totalAmountTokens() public view onlyOwner returns(uint256) {
+        return token.balanceOf(address(this));
     }
 
     /**
-     * Get count of tokens (only by owner).
+     * Withdraw all tokens from contract (only by owner).
      */
-    function countTokens() public view onlyOwner returns(uint256) {
-        return token.balanceOf(msg.sender);
+    function withdrawAllTokens() external onlyOwner {
+        token.transferFrom(address(this), msg.sender, totalAmountTokens());
     }
 
-    /**
-     * Get tokens (only by owner).
-     * @param _amount the amount of tokens
-     */
-    function getTokens(uint256 _amount) external onlyOwner{
-        require(_amount > 0, "Need to send at least some tokens");
-        require(_amount <= token.balanceOf(address(this)), "Not enough tokens in token balance");
-
-        token.transfer(msg.sender, _amount);
-    }
-
-    // Modifier for validate sended amount with count of tokens.
+    // Modifier for validate sended amount tokens with count of all tokens.
     modifier enoughTokens(uint256 _amount){
         require(_amount > 0, "Need to send at least some tokens");
-        require(_amount <= countTokens(), "Not enough tokens");
+        require(_amount <= totalAmountTokens(), "Not enough tokens");
         _;
     }
 
     /**
      * Get tokens (only by owner).
+     * @param _amount the amount of tokens
+     */
+    function getTokens(uint256 _amount) external onlyOwner enoughTokens(_amount){
+        token.transfer(address(this), _amount);
+    }
+
+    /**
+     * Send tokens (only by owner).
      * @param _recipient the address of recipient
      * @param _amount the amount of tokens
      */
     function sendTokens(address _recipient, uint256 _amount) external onlyOwner enoughTokens(_amount){
-        token.transferFrom(msg.sender, _recipient, _amount);
+        token.transferFrom(address(this), _recipient, _amount);
     }
 
     /**

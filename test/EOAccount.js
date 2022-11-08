@@ -65,14 +65,21 @@ describe("EOAccount", function (){
     })
 
     describe("Token interaction", function(){
-      it("Token count", async function(){
+      it("Token amount", async function(){
         await mockERC20.mock.balanceOf.returns(amount)
-        expect(await myEOAccountsContract.countTokens()).to.equal(amount)
+        expect(await myEOAccountsContract.totalAmountTokens()).to.equal(amount)
       })
-  
+
+      it("Withdraw all tokens", async function(){
+        await mockERC20.mock.transferFrom.returns(true)
+        await mockERC20.mock.balanceOf.returns(0)
+        await myEOAccountsContract.withdrawAllTokens()
+        expect(await myEOAccountsContract.totalAmountTokens()).to.equal(0)
+      })
+
       it("Get tokens by owner", async function(){
         await mockERC20.mock.balanceOf.returns(2*amount)
-        await mockERC20.mock.transfer.withArgs(accounts[0].address, amount).returns(true)
+        await mockERC20.mock.transfer.returns(true)
         await myEOAccountsContract.getTokens(amount)
       })
 
@@ -86,7 +93,7 @@ describe("EOAccount", function (){
 
       it("Send tokens by owner", async function(){
         await mockERC20.mock.balanceOf.returns(2*amount)
-        await mockERC20.mock.transferFrom.withArgs(accounts[0].address, accounts[1].address, amount).returns(true)
+        await mockERC20.mock.transferFrom.returns(true)
         await myEOAccountsContract.sendTokens(accounts[1].address, amount)
       })
 
