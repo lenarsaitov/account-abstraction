@@ -1,11 +1,13 @@
 ### Smart contract-based wallet
 
 Реализация смарт контракта, [дублирующего](https://www.argent.xyz/blog/wtf-is-account-abstraction/) некоторую логику _EOA аккаунтов (Externally Owned Accounts)_:
-- Получение токенов ([IERC20](https://docs.openzeppelin.com/contracts/2.x/api/token/erc20))
+- Получение токенов 
 - Отправка токенов
 - Подпись транзакций 
 
 Дополнительно реализован функционал _восстановления (смены владельца)_ с использованием доверенных лиц.
+
+В данном проекте подразумеваются токены, соответствующие интерфейсу [IERC20](https://docs.openzeppelin.com/contracts/2.x/api/token/erc20) стандарта [ERC20](https://ethereum.org/en/developers/docs/standards/tokens/erc-20/).
 
 Подробности концепции _account abstraction_ можно изучить в следующий источниках:
 
@@ -25,9 +27,9 @@
 - _access/Ownable.sol_
 - _token/ERC20/ERC20.sol_
 
-Комментарии к коду были добавлены с соответствием стандартом [_NatSpec_](https://docs.soliditylang.org/en/develop/natspec-format.html).
+Комментарии к коду были добавлены в соответствии со стандартом [_NatSpec_](https://docs.soliditylang.org/en/develop/natspec-format.html).
 
-Стиля оформления контракта был во многом реализован под влиянием следующих статей:
+Стиль оформления контракта был во многом осуществлен под влиянием следующих статей:
 
 [Solidity Style Guide (Part I)](https://medium.com/@ivanlieskov/solidity-style-guide-part-i-d0fda6041ff9)
 
@@ -35,7 +37,7 @@
 
 ### Тестирование
 
-В папке _test_ расположены тесты, покрывающие большое количество позитивных и негативных сценариев. При их разработке использовались инструменты _hardhat, waffle, ethers, mocha, solidity-coverage_ 
+В папке _test_ расположены тесты, покрывающие большое количество позитивных и негативных сценариев. При их разработке использовались инструменты _hardhat, waffle, ethers, mocha, solidity-coverage_.
 
 Для эмуляции взаимодействия с токенами _IERC20_ был использован соответствующий [_Mock контракт_](https://ethereum-waffle.readthedocs.io/en/latest/mock-contract.html).
 
