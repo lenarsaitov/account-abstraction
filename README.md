@@ -53,13 +53,13 @@ ________
 
 Доверенное лицо __добавляется__ администратором посредством выполнения следующей функции:
 
-```
+```solidity
 grantRole(TRUSTED_ACCOUNT_ROLE, accountAddress)
 ```
 
 Администратор также может __убрать__ аккаунт из списка доверенных при помощи следующего запроса:
 
-```
+```solidity
 revokeRole(TRUSTED_ACCOUNT_ROLE, accountAddress)
 ```
 
@@ -69,13 +69,13 @@ revokeRole(TRUSTED_ACCOUNT_ROLE, accountAddress)
 
 Первым делом подразумевается __инициализация__ восстановления, посредством выполнения любым из доверенных лиц следующей функции:
 
-```
+```solidity
 initRecovery(newAccountAddress)
 ```
 
 Далее __каждое__ доверенное лицо должно выполнить следующий запрос:
 
-```
+```solidity
 voteRecovery(newAccountAddress)
 ```
 
