@@ -154,7 +154,7 @@ function hasAdminRole(address _accountAddress) external view returns (bool)
 | ---- | ---- | ----------- |
 | [0] | bool | Returns `true` if `account` has been granted `admin role`. |
 
-## EOAccount
+## CAWallet
 
 ### token
 

@@ -158,7 +158,7 @@ contract OwnershipRecovery is Ownable, AccessControl{
  * @title Basic smart contract-based wallet implementation
  * @author Lenar Saitov
 */
-contract EOAccount is OwnershipRecovery{
+contract CAWallet is OwnershipRecovery{
     IERC20 public token;
 
     constructor (IERC20 _token) {
