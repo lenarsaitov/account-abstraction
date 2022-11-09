@@ -113,12 +113,12 @@ describe("CAWallet", function (){
     })
 
     describe("Recover ownership", function(){
-      it("Full recovery correct voting by trusted accounts", async function(){
+      it("Recovery correct approved by trusted accounts", async function(){
         await myCAWalletContract.connect(accounts[1]).initRecovery(accounts[10].address)
     
-        await myCAWalletContract.connect(accounts[1]).voteRecovery(accounts[10].address)
-        await myCAWalletContract.connect(accounts[2]).voteRecovery(accounts[10].address)
-        await myCAWalletContract.connect(accounts[3]).voteRecovery(accounts[10].address)
+        await myCAWalletContract.connect(accounts[1]).approveRecovery(accounts[10].address)
+        await myCAWalletContract.connect(accounts[2]).approveRecovery(accounts[10].address)
+        await myCAWalletContract.connect(accounts[3]).approveRecovery(accounts[10].address)
 
         expect(await myCAWalletContract.hasAdminRole(accounts[0].address)).to.equal(false)
         expect(await myCAWalletContract.hasAdminRole(accounts[10].address)).to.equal(true)
@@ -126,77 +126,77 @@ describe("CAWallet", function (){
         expect(await myCAWalletContract.owner()).to.equal(accounts[10].address)
       })
     
-      it("Not full recovery correct voting by trusted accounts", async function(){
+      it("Not correct approve recovery by trusted accounts", async function(){
         await myCAWalletContract.connect(accounts[1]).initRecovery(accounts[10].address)
 
-        await myCAWalletContract.connect(accounts[1]).voteRecovery(accounts[10].address)
-        await myCAWalletContract.connect(accounts[2]).voteRecovery(accounts[10].address)
+        await myCAWalletContract.connect(accounts[1]).approveRecovery(accounts[10].address)
+        await myCAWalletContract.connect(accounts[2]).approveRecovery(accounts[10].address)
     
         expect(await myCAWalletContract.hasAdminRole(accounts[0].address)).to.equal(true)
         expect(await myCAWalletContract.hasAdminRole(accounts[10].address)).to.equal(false)
       })
 
-      it("See voted trusted account by trusted account", async function(){
+      it("See approved recovery by trusted account", async function(){
         await myCAWalletContract.connect(accounts[1]).initRecovery(accounts[10].address)
-        await myCAWalletContract.connect(accounts[2]).voteRecovery(accounts[10].address)
+        await myCAWalletContract.connect(accounts[2]).approveRecovery(accounts[10].address)
 
-        expect(await myCAWalletContract.connect(accounts[1]).isVoted(accounts[2].address)).to.equal(true)
+        expect(await myCAWalletContract.connect(accounts[1]).isApprovedRecovery(accounts[2].address)).to.equal(true)
       })
 
-      it("Dont see voted trusted account by admin account", async function(){
+      it("Dont see approved recovery (by trusted account) by admin account", async function(){
         await myCAWalletContract.connect(accounts[1]).initRecovery(accounts[10].address)
-        await myCAWalletContract.connect(accounts[2]).voteRecovery(accounts[10].address)
+        await myCAWalletContract.connect(accounts[2]).approveRecovery(accounts[10].address)
 
-        await expect(myCAWalletContract.connect(accounts[0]).isVoted(accounts[2].address)).to.reverted
+        await expect(myCAWalletContract.connect(accounts[0]).isApprovedRecovery(accounts[2].address)).to.reverted
       })
 
-      it("Dont see voted trusted account by alias account", async function(){
+      it("Dont see approved trusted account by alias account", async function(){
         await myCAWalletContract.connect(accounts[1]).initRecovery(accounts[10].address)
-        await myCAWalletContract.connect(accounts[2]).voteRecovery(accounts[10].address)
+        await myCAWalletContract.connect(accounts[2]).approveRecovery(accounts[10].address)
 
-        await expect(myCAWalletContract.connect(accounts[10]).isVoted(accounts[2].address)).to.reverted
+        await expect(myCAWalletContract.connect(accounts[10]).isApprovedRecovery(accounts[2].address)).to.reverted
       })
 
-      it("Dont voting recovery when double votes by trusted account", async function(){
+      it("Dont approve recovery when were double approvals by trusted account", async function(){
         await myCAWalletContract.connect(accounts[1]).initRecovery(accounts[10].address)
-        await myCAWalletContract.connect(accounts[1]).voteRecovery(accounts[10].address)
+        await myCAWalletContract.connect(accounts[1]).approveRecovery(accounts[10].address)
         
-        await expect(myCAWalletContract.connect(accounts[1]).voteRecovery(accounts[10].address)).to.be.reverted
+        await expect(myCAWalletContract.connect(accounts[1]).approveRecovery(accounts[10].address)).to.be.reverted
       })
       
-      it("Dont voting recovery (by trusted account) when vote to other candidate than was when init recovery", async function(){
+      it("Dont approve recovery (by trusted account) when approve to other candidate than was when init recovery", async function(){
         await myCAWalletContract.connect(accounts[1]).initRecovery(accounts[10].address)    
-        await myCAWalletContract.connect(accounts[1]).voteRecovery(accounts[10].address)
+        await myCAWalletContract.connect(accounts[1]).approveRecovery(accounts[10].address)
 
-        await expect(myCAWalletContract.connect(accounts[2]).voteRecovery(accounts[11].address)).to.be.reverted
+        await expect(myCAWalletContract.connect(accounts[2]).approveRecovery(accounts[11].address)).to.be.reverted
       })
 
       it("Dont init recovery (by trusted account) to candidate with the equal to owner", async function(){
         await expect(myCAWalletContract.connect(accounts[1]).initRecovery(accounts[0].address)).to.be.reverted
       })
 
-      it("Dont voting recovery (by trusted account) when vote to other (admin) candidate than was when init recovery", async function(){
+      it("Dont approve recovery (by trusted account) when approve to other (admin) candidate than was when init recovery", async function(){
         await myCAWalletContract.connect(accounts[1]).initRecovery(accounts[10].address)    
-        await expect(myCAWalletContract.connect(accounts[2]).voteRecovery(accounts[0].address)).to.be.reverted
+        await expect(myCAWalletContract.connect(accounts[2]).approveRecovery(accounts[0].address)).to.be.reverted
       })
 
       it("Dont init recovery by admin account", async function(){
         await expect(myCAWalletContract.connect(accounts[0]).initRecovery(accounts[10].address)).to.be.reverted
       })
 
-      it("Dont vote to recovery by admin account", async function(){
+      it("Dont approve recovery by admin account", async function(){
         await myCAWalletContract.connect(accounts[1]).initRecovery(accounts[10].address)    
-        await expect(myCAWalletContract.connect(accounts[0]).voteRecovery(accounts[10].address)).to.be.reverted
+        await expect(myCAWalletContract.connect(accounts[0]).approveRecovery(accounts[10].address)).to.be.reverted
       })
 
-      it("Dont vote recovery when recovery wasnt initialized", async function(){   
-        await expect(myCAWalletContract.connect(accounts[1]).voteRecovery(accounts[10].address)).to.be.reverted
+      it("Dont approve recovery when recovery wasnt initialized", async function(){   
+        await expect(myCAWalletContract.connect(accounts[1]).approveRecovery(accounts[10].address)).to.be.reverted
       })
 
       it("Reset recovery when recovery not finished", async function(){
         await myCAWalletContract.connect(accounts[1]).initRecovery(accounts[10].address)
         expect(await myCAWalletContract.connect(accounts[1]).isRecoveryInitialized()).to.equal(true)
-        await myCAWalletContract.connect(accounts[1]).voteRecovery(accounts[10].address)
+        await myCAWalletContract.connect(accounts[1]).approveRecovery(accounts[10].address)
         await myCAWalletContract.connect(accounts[2]).resetAnyRecovery()
     
         expect(await myCAWalletContract.connect(accounts[1]).isRecoveryInitialized()).to.equal(false)

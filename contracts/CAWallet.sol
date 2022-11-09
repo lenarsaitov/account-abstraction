@@ -20,8 +20,8 @@ contract OwnershipRecovery is Ownable, AccessControl{
     struct Recovery{
         bool isActual;
         address candidate;
-        uint256 countVotesFor;
-        mapping(address => bool) voteUnique;
+        uint256 countApprovals;
+        mapping(address => bool) approveUnique;
     }
 
     Recovery private recovery;
@@ -40,11 +40,11 @@ contract OwnershipRecovery is Ownable, AccessControl{
 
     /**
      * Only for trusted account.
-     * @return does trusted account voted or not
-     * @param _voter address of trusted account
+     * @return does trusted account approved or not
+     * @param _accountAddress address of trusted account
      */
-    function isVoted(address _voter) external onlyRole(TRUSTED_ACCOUNT_ROLE) view returns (bool){
-        return recovery.voteUnique[_voter];
+    function isApprovedRecovery(address _accountAddress) external onlyRole(TRUSTED_ACCOUNT_ROLE) view returns (bool){
+        return recovery.approveUnique[_accountAddress];
     }
 
     /**
@@ -55,11 +55,11 @@ contract OwnershipRecovery is Ownable, AccessControl{
         return recovery.isActual;
     }
 
-    function _resetVotes() private{
-        recovery.countVotesFor = 0;
+    function _resetApprovals() private{
+        recovery.countApprovals = 0;
 
         for (uint256 i = 0; i < trustedAccounts.length; ++i) {
-            recovery.voteUnique[trustedAccounts[i]] = false;
+            recovery.approveUnique[trustedAccounts[i]] = false;
         }
     }
 
@@ -68,7 +68,7 @@ contract OwnershipRecovery is Ownable, AccessControl{
      * @param _candidate the address of new assumed account (new assumed owner wallets)
      */
     function initRecovery(address _candidate) external onlyRole(TRUSTED_ACCOUNT_ROLE) notToOwner(_candidate){
-        _resetVotes();
+        _resetApprovals();
 
         recovery.isActual = true;
         recovery.candidate = _candidate;
@@ -78,7 +78,7 @@ contract OwnershipRecovery is Ownable, AccessControl{
      * Execute reset the recovery of ownership of the wallet (only for trusted account).
      */
     function resetAnyRecovery() external onlyRole(TRUSTED_ACCOUNT_ROLE) {
-        _resetVotes();
+        _resetApprovals();
 
         recovery.isActual = false;
         recovery.candidate = address(0);
@@ -88,15 +88,15 @@ contract OwnershipRecovery is Ownable, AccessControl{
      * Add agreement to transfer of ownership (only for trusted account). Also transfer ownership if all trusted accounts taken agree and finalize recovery proccess.
      * @param _candidate the address of new assumed account (new assumed owner wallets)
      */
-    function voteRecovery(address _candidate) external onlyRole(TRUSTED_ACCOUNT_ROLE) notToOwner(_candidate){
+    function approveRecovery(address _candidate) external onlyRole(TRUSTED_ACCOUNT_ROLE) notToOwner(_candidate){
         require(recovery.isActual, "Recovery was not inited");
-        require(!recovery.voteUnique[msg.sender], "You already voted");
+        require(!recovery.approveUnique[msg.sender], "You have already agreed");
         require(_candidate == recovery.candidate, "There is not actual candidate for recover, you can reset recovery and init new");
 
-        recovery.countVotesFor++;
-        recovery.voteUnique[msg.sender] = true;
+        recovery.countApprovals++;
+        recovery.approveUnique[msg.sender] = true;
 
-        if (recovery.countVotesFor == trustedAccounts.length){
+        if (recovery.countApprovals == trustedAccounts.length){
             _revokeRole(DEFAULT_ADMIN_ROLE, this.owner());
             _setupRole(DEFAULT_ADMIN_ROLE, _candidate);
             _transferOwnership(_candidate);
@@ -128,7 +128,7 @@ contract OwnershipRecovery is Ownable, AccessControl{
 
         for (uint256 i = 0; i < trustedAccounts.length; ++i) {
             if (_accountAddress == trustedAccounts[i]){
-                recovery.voteUnique[_accountAddress] = false;
+                recovery.approveUnique[_accountAddress] = false;
                 trustedAccounts[i] = trustedAccounts[trustedAccounts.length-1];
                 trustedAccounts.pop();
 
