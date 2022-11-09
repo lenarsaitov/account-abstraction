@@ -1,546 +1,103 @@
-# Contract API
+### Smart contract-based wallet
 
-## OwnershipRecovery
+В данном проекте разработан смарт контракт, [дублирующий](https://www.argent.xyz/blog/wtf-is-account-abstraction/) некоторую логику _EO аккаунтов (Externally Owned Accounts)_:
+- Получение токенов 
+- Отправка токенов
+- Подпись транзакций 
 
-### notToOwner
+Дополнительно в контракте реализован функционал _восстановления (смены владельца)_ с использованием доверенных лиц.
 
-```solidity
-modifier notToOwner(address _accountAddress)
-```
+Подразумеваются, что токены соответствуют интерфейсу [IERC20](https://docs.openzeppelin.com/contracts/2.x/api/token/erc20) стандарта [ERC20](https://ethereum.org/en/developers/docs/standards/tokens/erc-20/).
 
-### getCountTrustedAccounts
+Подробности концепции __account abstraction__ можно изучить в следующих источниках:
 
-```solidity
-function getCountTrustedAccounts() external view returns (uint256)
-```
+[Part I: WTF is Account Abstraction](https://www.argent.xyz/blog/wtf-is-account-abstraction/)
 
-#### Return Values
+[Part II: WTF is Account Abstraction](https://archive.md/OESa5#selection-243.0-246.0)
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 | count of trusted accounts. |
+[Why EOA Wallets are a Threat to the Future of Blockchain](https://www.argent.xyz/blog/self-custody-mass-adoption/)
 
-### isApprovedRecovery
+[Implementing account abstraction as part of eth1.x](https://ethereum-magicians.org/t/implementing-account-abstraction-as-part-of-eth1-x/4020)
+________
 
-```solidity
-function isApprovedRecovery(address _accountAddress) external view returns (bool)
-```
+### Структура проекта
 
-Only for trusted account.
+Смарт контракт был реализованный на языке _Solidity_ последней (на момент 08.11.22) версии _0.8.17_.
 
-#### Parameters
+Использовались верифицированные контракты _OpenZeppelin_:
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _accountAddress | address | address of trusted account |
+- _access/Ownable.sol_
+- _token/ERC20/ERC20.sol_
 
-#### Return Values
+Помимо этого была использована некоторая видоизмененная часть _access/AccessControl.sol_ (см. в _contracts/AccessControl.sol_)
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | bool | does trusted account approved or not |
+Комментарии к коду были добавлены в соответствии со стандартом [_NatSpec_](https://docs.soliditylang.org/en/develop/natspec-format.html).
 
-### isRecoveryInitialized
+Стиль оформления контракта был во многом осуществлен под влиянием следующих статей:
 
-```solidity
-function isRecoveryInitialized() external view returns (bool)
-```
+[Solidity Style Guide (Part I)](https://medium.com/@ivanlieskov/solidity-style-guide-part-i-d0fda6041ff9)
 
-Only for trusted account.
+[Solidity Style Guide (Part II)](https://medium.com/@ivanlieskov/solidity-style-guide-part-ii-23ac3b10fdfb)
 
-#### Return Values
+Описание __API__ контракта можно посмотреть в документации, расположенной папке __docs__.
+________
+### Функционал смены владельца доверенными лицами
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | bool | recovery initialized or not |
+Данный функционал был реализован с использованием определенных ___модификаторов___ (см.  _onlyOwner_ и _onlyRole_).
 
-### _resetApprovals
+Для аккаунтов введены две роли:
+
+- _администратор_
+- _доверенное лицо_
+
+В любой момент времени и при любых ситуациях __владелец кошелька__ является __администратором__, и наоборот.
+
+Доверенное лицо __добавляется__ администратором посредством выполнения следующей функции:
 
 ```solidity
-function _resetApprovals() private
+grantTrustedRole(accountAddress)
 ```
 
-### initRecovery
+Администратор также может __убрать__ аккаунт из списка доверенных при помощи следующего запроса:
 
 ```solidity
-function initRecovery(address _candidate) external
+revokeTrustedRole(accountAddress)
 ```
 
-Execute init of recovery of ownership of the wallet (transfer of ownership), only for trusted account.
+Сама смена владельца реализована в __два этапа__ (см. ниже).
 
-#### Parameters
+#### Смена владельца
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _candidate | address | the address of new assumed account (new assumed owner wallets) |
-
-### resetAnyRecovery
+Первым делом подразумевается __инициализация__ восстановления, посредством выполнения любым из доверенных лиц следующей функции:
 
 ```solidity
-function resetAnyRecovery() external
+initRecovery(newAccountAddress)
 ```
 
-Execute reset the recovery of ownership of the wallet (only for trusted account).
-
-### approveRecovery
+Далее __каждое__ доверенное лицо должно выполнить следующий запрос:
 
 ```solidity
-function approveRecovery(address _candidate) external
+approveRecovery(newAccountAddress)
 ```
 
-Add agreement to transfer of ownership (only for trusted account). Also transfer ownership if all trusted accounts taken agree and finalize recovery proccess.
+В результате всего этого, владельцом (и администратором) становится новый аккаунт с адресом _newAccountAddress_.
 
-#### Parameters
+Различные другие кейсы можно посмотреть в соответствующих тестах.
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _candidate | address | the address of new assumed account (new assumed owner wallets) |
+#### Примечание
 
-### grantTrustedRole
+Данная логика имеет некоторые __риски__, т.к. доверенные лица могут сговориться и сменить владельца без его ведома. 
 
-```solidity
-function grantTrustedRole(address _accountAddress) external
-```
+Возможное компромиссное решение данной проблемы может состоять в исполнении передачи владения __через некоторый промежуток времени__, после инициализации запроса (к примеру, через сутки), что может повысить вероятность обнаружения данной ситуации текущим владельцем.
 
-Grant trusted role (permission only for admin).
+________
 
-#### Parameters
+### Тестирование
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _accountAddress | address | the address of account |
+В папке _test_ расположены тесты, покрывающие большое количество позитивных и негативных сценариев (порядка 50 штук). При их разработке использовались инструменты _hardhat, waffle, ethers, mocha, solidity-coverage_.
 
-### revokeTrustedRole
+Для эмуляции взаимодействия с токенами _IERC20_ был использован соответствующий [_Mock контракт_](https://ethereum-waffle.readthedocs.io/en/latest/mock-contract.html).
 
-```solidity
-function revokeTrustedRole(address _accountAddress) external
-```
+Таблица покрытия тестов выглядит следующим образом: 
 
-Revoke trusted role (permission only for admin)
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _accountAddress | address | the address of account |
-
-### hasTrustedRole
-
-```solidity
-function hasTrustedRole(address _accountAddress) external view returns (bool)
-```
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _accountAddress | address | the address of account |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | bool | Returns `true` if `account` has been granted `trusted role`. |
-
-### hasAdminRole
-
-```solidity
-function hasAdminRole(address _accountAddress) external view returns (bool)
-```
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _accountAddress | address | the address of account |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | bool | Returns `true` if `account` has been granted `admin role`. |
-
-## CAWallet
-
-### token
-
-```solidity
-contract IERC20 token
-```
-
-### constructor
-
-```solidity
-constructor(contract IERC20 _token) public
-```
-
-### fillFund
-
-```solidity
-function fillFund() external payable
-```
-
-Fill fund (only by owner).
-
-### totalAmount
-
-```solidity
-function totalAmount() external view returns (uint256)
-```
-
-Get amount of funds available in the contract (only by owner).
-
-### withdrawAll
-
-```solidity
-function withdrawAll() external
-```
-
-Withdraw all funds (only by owner).
-
-### totalAmountTokens
-
-```solidity
-function totalAmountTokens() public view returns (uint256)
-```
-
-Get amount of tokens available in the contract (only by owner).
-
-### withdrawAllTokens
-
-```solidity
-function withdrawAllTokens() external
-```
-
-Withdraw all tokens from contract (only by owner).
-
-### enoughTokens
-
-```solidity
-modifier enoughTokens(uint256 _amount)
-```
-
-### getTokens
-
-```solidity
-function getTokens(uint256 _amount) external
-```
-
-Get tokens (only by owner).
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _amount | uint256 | the amount of tokens |
-
-### sendTokens
-
-```solidity
-function sendTokens(address _recipient, uint256 _amount) external
-```
-
-Send tokens (only by owner).
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _recipient | address | the address of recipient |
-| _amount | uint256 | the amount of tokens |
-
-### approveDebitTokens
-
-```solidity
-function approveDebitTokens(address _spender, uint256 _amount) external
-```
-
-Approve debit tokens (only by owner).
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _spender | address | the address of spender |
-| _amount | uint256 | the amount of tokens |
-
-## AccountRecovery
-
-### TRUSTED_ACCOUNT_ROLE
-
-```solidity
-bytes32 TRUSTED_ACCOUNT_ROLE
-```
-
-### trustedAccounts
-
-```solidity
-address[] trustedAccounts
-```
-
-### constructor
-
-```solidity
-constructor() public
-```
-
-### Recovery
-
-```solidity
-struct Recovery {
-  bool isActual;
-  address candidate;
-  uint256 countVotesFor;
-  mapping(address => bool) voteUnique;
-}
-```
-
-### recovery
-
-```solidity
-struct AccountRecovery.Recovery recovery
-```
-
-### getCountTrustedAccounts
-
-```solidity
-function getCountTrustedAccounts() external view returns (uint256)
-```
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 | count of trusted accounts. |
-
-### isVoted
-
-```solidity
-function isVoted(address _voter) external view returns (bool)
-```
-
-Only for trusted account.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _voter | address | address of trusted account |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | bool | does trusted account voted or not |
-
-### isRecoveryInitialized
-
-```solidity
-function isRecoveryInitialized() external view returns (bool)
-```
-
-Only for trusted account.
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | bool | recovery initialized or not |
-
-### _resetVotes
-
-```solidity
-function _resetVotes() private
-```
-
-### initRecovery
-
-```solidity
-function initRecovery(address _candidate) external
-```
-
-Execute init of recovery of ownership of the wallet (transfer of ownership), only for trusted account.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _candidate | address | the address of new assumed account (new assumed owner wallets) |
-
-### resetAnyRecovery
-
-```solidity
-function resetAnyRecovery() external
-```
-
-Execute reset the recovery of ownership of the wallet (only for trusted account).
-
-### voteRecovery
-
-```solidity
-function voteRecovery(address _candidate) external
-```
-
-Add agreement to transfer of ownership (only for trusted account). Also transfer ownership if all trusted accounts taken agree and finalize recovery proccess.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _candidate | address | the address of new assumed account (new assumed owner wallets) |
-
-### toRevokeTrustedRoleAccount
-
-```solidity
-modifier toRevokeTrustedRoleAccount(bytes32 _role, address _accountAddress)
-```
-
-### renounceRole
-
-```solidity
-function renounceRole(bytes32 _role, address _accountAddress) public
-```
-
-Renounce role by account self (permission only for self).
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _role | bytes32 | the role of account |
-| _accountAddress | address | the address of account (should be only == msg.sender) |
-
-### revokeRole
-
-```solidity
-function revokeRole(bytes32 _role, address _accountAddress) public
-```
-
-Revoke role (permission only for admin)
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _role | bytes32 | the role of account |
-| _accountAddress | address | the address of account |
-
-### grantRole
-
-```solidity
-function grantRole(bytes32 _role, address _accountAddress) public
-```
-
-Grant role (permission only for admin).
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _role | bytes32 | the role of account |
-| _accountAddress | address | the address of account |
-
-## EOAccount
-
-### token
-
-```solidity
-contract IERC20 token
-```
-
-### constructor
-
-```solidity
-constructor(contract IERC20 _token) public
-```
-
-### fillFund
-
-```solidity
-function fillFund() external payable
-```
-
-Fill fund (only by owner).
-
-### totalAmount
-
-```solidity
-function totalAmount() external view returns (uint256)
-```
-
-Get amount of all funds (only by owner).
-
-### withdrawAll
-
-```solidity
-function withdrawAll() external
-```
-
-Withdraw all funds (only by owner).
-
-### totalAmountTokens
-
-```solidity
-function totalAmountTokens() public view returns (uint256)
-```
-
-Get amount of funds available in the contract (only by owner).
-
-### withdrawAllTokens
-
-```solidity
-function withdrawAllTokens() external
-```
-
-Withdraw all tokens from contract (only by owner).
-
-### enoughTokens
-
-```solidity
-modifier enoughTokens(uint256 _amount)
-```
-
-### getTokens
-
-```solidity
-function getTokens(uint256 _amount) external
-```
-
-Get tokens (only by owner).
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _amount | uint256 | the amount of tokens |
-
-### sendTokens
-
-```solidity
-function sendTokens(address _recipient, uint256 _amount) external
-```
-
-Send tokens (only by owner).
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _recipient | address | the address of recipient |
-| _amount | uint256 | the amount of tokens |
-
-### approveDebitTokens
-
-```solidity
-function approveDebitTokens(address _spender, uint256 _amount) external
-```
-
-Approve debit tokens (only by owner).
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _spender | address | the address of spender |
-| _amount | uint256 | the amount of tokens |
-
+![](docs/table.png)
