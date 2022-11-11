@@ -1,6 +1,22 @@
-# Solidity API
+# Contract API
 
 ## OwnershipRecovery
+
+### InvalidTimestamp
+
+```solidity
+error InvalidTimestamp(uint256 _current, uint256 _minRequired, string _errorMessage)
+```
+
+Invalid timestamp to approve recovery of ownership. Needed more than recovery.timestamp
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _current | uint256 | current timestamp of block. |
+| _minRequired | uint256 | min required of timestamp. |
+| _errorMessage | string | error message. |
 
 ### notToOwner
 
@@ -174,6 +190,12 @@ contract IERC20 token
 constructor(contract IERC20 _token) public
 ```
 
+### enoughTokens
+
+```solidity
+modifier enoughTokens(uint256 _amount)
+```
+
 ### fillFund
 
 ```solidity
@@ -213,12 +235,6 @@ function withdrawAllTokens() external
 ```
 
 Withdraw all tokens from contract (only by owner).
-
-### enoughTokens
-
-```solidity
-modifier enoughTokens(uint256 _amount)
-```
 
 ### getTokens
 

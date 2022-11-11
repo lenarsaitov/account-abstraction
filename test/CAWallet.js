@@ -118,6 +118,10 @@ describe("CAWallet", function (){
     
         await myCAWalletContract.connect(accounts[1]).approveRecovery(accounts[10].address)
         await myCAWalletContract.connect(accounts[2]).approveRecovery(accounts[10].address)
+
+        await ethers.provider.send("evm_increaseTime", [100000])
+        await ethers.provider.send("evm_mine")
+
         await myCAWalletContract.connect(accounts[3]).approveRecovery(accounts[10].address)
 
         expect(await myCAWalletContract.hasAdminRole(accounts[0].address)).to.equal(false)
@@ -126,7 +130,16 @@ describe("CAWallet", function (){
         expect(await myCAWalletContract.owner()).to.equal(accounts[10].address)
       })
     
-      it("Not correct approve recovery by trusted accounts", async function(){
+      it("Not correct approve by trusted accounts because timestamp lock", async function(){
+        await myCAWalletContract.connect(accounts[1]).initRecovery(accounts[10].address)
+    
+        await myCAWalletContract.connect(accounts[1]).approveRecovery(accounts[10].address)
+        await myCAWalletContract.connect(accounts[2]).approveRecovery(accounts[10].address)
+
+        await expect(myCAWalletContract.connect(accounts[3]).approveRecovery(accounts[10].address)).to.reverted
+      })
+
+      it("Not correct approve recovery by trusted accounts becouse not enough approvals", async function(){
         await myCAWalletContract.connect(accounts[1]).initRecovery(accounts[10].address)
 
         await myCAWalletContract.connect(accounts[1]).approveRecovery(accounts[10].address)

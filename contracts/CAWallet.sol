@@ -10,6 +10,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 /// @author Lenar Saitov
 contract OwnershipRecovery is Ownable, AccessControl{
     bytes32 private constant TRUSTED_ACCOUNT_ROLE = keccak256("TRUSTED_ACCOUNT_ROLE");
+    uint256 private constant TIME_LOCK_PERIOD = 1 days;
     address[] private trustedAccounts;
 
     constructor(){
@@ -20,11 +21,18 @@ contract OwnershipRecovery is Ownable, AccessControl{
     struct Recovery{
         bool isActual;
         address candidate;
+        uint256 timelockEnd;
         uint256 countApprovals;
         mapping(address => bool) approveUnique;
     }
 
     Recovery private recovery;
+
+    /// Invalid timestamp to approve recovery of ownership. Needed more than recovery.timestamp
+    /// @param _current current timestamp of block.
+    /// @param _minRequired min required of timestamp.
+    /// @param _errorMessage error message.
+    error InvalidTimestamp (uint256 _current, uint256 _minRequired, string _errorMessage);
 
     modifier notToOwner(address _accountAddress){
         require(this.owner() != _accountAddress, "Address cant be equal to address of owner (account with admin role)");
@@ -56,6 +64,7 @@ contract OwnershipRecovery is Ownable, AccessControl{
     }
 
     function _resetApprovals() private{
+        recovery.timelockEnd = 0;
         recovery.countApprovals = 0;
 
         for (uint256 i = 0; i < trustedAccounts.length; ++i) {
@@ -93,6 +102,14 @@ contract OwnershipRecovery is Ownable, AccessControl{
         require(!recovery.approveUnique[msg.sender], "You have already agreed");
         require(_candidate == recovery.candidate, "There is not actual candidate for recover, you can reset recovery and init new");
 
+        if (block.timestamp < recovery.timelockEnd){
+            revert InvalidTimestamp({
+                _errorMessage: "Approve recovery is timelocked, try later",
+                _current: block.timestamp,
+                _minRequired: recovery.timelockEnd
+            });
+        }
+
         recovery.countApprovals++;
         recovery.approveUnique[msg.sender] = true;
 
@@ -102,6 +119,8 @@ contract OwnershipRecovery is Ownable, AccessControl{
             _transferOwnership(_candidate);
 
             recovery.isActual = false;
+        } else if (recovery.countApprovals + 1 == trustedAccounts.length){
+            recovery.timelockEnd = block.timestamp + TIME_LOCK_PERIOD;
         }
     }
 
@@ -165,6 +184,14 @@ contract CAWallet is OwnershipRecovery{
         token = _token;
     }
 
+
+    // Modifier for validate sended amount tokens with count of all tokens.
+    modifier enoughTokens(uint256 _amount){
+        require(_amount > 0, "Need to send at least some tokens");
+        require(_amount <= totalAmountTokens(), "Not enough tokens");
+        _;
+    }
+
     /**
      * Fill fund (only by owner).
      */
@@ -197,13 +224,6 @@ contract CAWallet is OwnershipRecovery{
      */
     function withdrawAllTokens() external onlyOwner {
         token.transferFrom(address(this), msg.sender, totalAmountTokens());
-    }
-
-    // Modifier for validate sended amount tokens with count of all tokens.
-    modifier enoughTokens(uint256 _amount){
-        require(_amount > 0, "Need to send at least some tokens");
-        require(_amount <= totalAmountTokens(), "Not enough tokens");
-        _;
     }
 
     /**
