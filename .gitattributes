@@ -1,4 +1,3 @@
 docs/* linguist-documentation
-./package.json linguist-vendored
-./hardhat.config.js linguist-vendored
+test/* linguist-vendored
 *.sol linguist-language=Solidity
