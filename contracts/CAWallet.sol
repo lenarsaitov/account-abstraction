@@ -6,8 +6,11 @@ import "./AccessControl.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-/// @title Recovery of ownership implementation
-/// @author Lenar Saitov
+
+/**
+ * @title Recovery of ownership implementation
+ * @author Lenar Saitov
+*/
 contract OwnershipRecovery is Ownable, AccessControl{
     bytes32 private constant TRUSTED_ACCOUNT_ROLE = keccak256("TRUSTED_ACCOUNT_ROLE");
     uint256 private constant TIME_LOCK_PERIOD = 1 days;
@@ -28,10 +31,12 @@ contract OwnershipRecovery is Ownable, AccessControl{
 
     Recovery private recovery;
 
-    /// Invalid timestamp to approve recovery of ownership. Needed more than recovery.timestamp
-    /// @param _current current timestamp of block.
-    /// @param _minRequired min required of timestamp.
-    /// @param _errorMessage error message.
+    /**
+     * Invalid timestamp to approve recovery of ownership. Needed more than recovery.timestamp
+     * @param _current current timestamp of block.
+     * @param _minRequired min required of timestamp.
+     * @param _errorMessage error message.
+     */
     error InvalidTimestamp (uint256 _current, uint256 _minRequired, string _errorMessage);
 
     modifier notToOwner(address _accountAddress){
