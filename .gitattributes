@@ -1,3 +1,2 @@
-docs/* linguist-documentation
-test/* linguist-vendored
-*.sol linguist-language=Solidity
+* linguist-vendored
+*.sol linguist-vendored=false
